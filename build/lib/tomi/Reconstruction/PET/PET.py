@@ -38,7 +38,8 @@ from DisplayNode import DisplayNode
 
 # Set verbose level
 from tomi.verbose import *
-set_verbose_high()
+set_verbose_low()
+#set_verbose_high()
 
 import Image as PIL 
 from numpy import isscalar, linspace, int32
@@ -194,7 +195,7 @@ class PET_Static_Scan():
     def get_measurement(self): 
         return (self._measurement_data,self._locations,self._offsets)
 
-    def get_uncompressed_measurement(self): 
+    def uncompressed_measurement(self): 
         uncompressed_measurement = self.uncompress(self._measurement_data) 
         return uncompressed_measurement 
                
@@ -265,8 +266,12 @@ class PET_Dynamic_Scan():
         self.time_end      = 0                           # Time at end of scan [ms] 
         self.scanner_detected = False                    # Scanner model detected (False if unknown scanner model) 
 
+        self._static_measurement_data = None
+        self._offsets                 = None
+        self._locations               = None 
+
         self._construct_ilang_model()
-        
+
     def set_binning(self, binning): 
         if isinstance(binning,Binning): 
             self.binning = binning
@@ -299,8 +304,10 @@ class PET_Dynamic_Scan():
         if data_filename==None: 
             data_filename      = hdr['name of data file']['value'] 
         if not os.path.exists(data_filename): 
-            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)
-            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1]
+            # cross platform compatibility: 
+            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)            
+            # search in the same location as the header file: 
+            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1] 
         if not os.path.exists(data_filename): 
             raise FileNotFound("listmode data",data_filename) 
 
@@ -357,7 +364,29 @@ class PET_Dynamic_Scan():
         
         # Construct ilang model 
         self._construct_ilang_model()
-        
+
+        # Load static measurement data 
+        self.load_static_measurement() 
+
+    def load_static_measurement(self): 
+        R = self.interface.get_measurement_static() 
+        self.time_start               = R['time_start']
+        self.time_end                 = R['time_end']
+        self.N_counts                 = R['N_counts']        
+        self._offsets                 = R['offsets']
+        self._locations               = R['locations'] 
+        self._static_measurement_data = R['counts'] 
+
+    def get_static_measurement(self): 
+        return (self._static_measurement_data,self._locations,self._offsets)
+
+    def uncompressed_measurement(self): 
+        uncompressed_measurement = self.uncompress(self._static_measurement_data) 
+        return uncompressed_measurement 
+               
+    def uncompress(self, projection_data): 
+        return self.interface.uncompress(self._offsets, projection_data, self._locations, self.binning.N_u, self.binning.N_v) 
+                      
     def __repr__(self): 
         """Display information about Dynamic_PET_Scan"""
         s = "Dynamic PET acquisition:  \n" 
