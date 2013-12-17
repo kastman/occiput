@@ -6,28 +6,45 @@
 # Martinos Center for Biomedical Imaging, Harvard University/MGH, Boston
 # Dec. 2013, Boston
 
+
 __all__ = ['PET_Static_Scan','PET_Dynamic_Scan','PET_Interface_Petlink32','PET_Interface_mMR']
 
+
+# Import interfile data handling module 
 from interfile import Interfile
+
+#Import scanner-specific interfaces: 
 from petlink import PET_Interface_Petlink32
+
 try: 
     from mMR import PET_Interface_mMR 
     HAVE_mMR = True
 except:
     HAVE_mMR = False
-    
+
+# Import NiftyCore ray-tracers
 try:
     from NiftyCore.NiftyRec import PET_project_compressed, PET_backproject_compressed 
     HAVE_NiftyRec = True
 except: 
-    print "NiftyRec could not be loaded! "
+    print "NiftyCore could not be loaded: it will not be possible to reconstruct the PET data. "
     HAVE_NiftyRec = False
 
-from numpy import isscalar, linspace, int32
+# Import ilang (inference language; optimisation) 
 from PET_ilang import PET_Static_Poisson, PET_Dynamic_Poisson 
 
+# Import DisplayNode to produce ipython notebook visualisations
 from DisplayNode import DisplayNode
+
+# Set verbose level
+from tomi.verbose import *
+set_verbose_high()
+
 import Image as PIL 
+from numpy import isscalar, linspace, int32
+import os
+
+
 
 DEFAULT_BINNING = {      "n_axial":                252,
                          "n_azimuthal":            1,
@@ -49,6 +66,18 @@ DEFAULT_ROI = {          "x":                      0.0,
 DEFAULT_N_TIME_BINS = 30
 
 EPS = 0.000000000001
+
+
+
+class FileNotFound(Exception): 
+    def __init__(self,msg,filename): 
+        self.msg = str(msg) 
+        self.filename = str(filename)
+    def __str__(self): 
+        return "Cannot find file '%s' (%s)."%(self.filename, self.msg)
+
+
+
 
 class ROI(): 
     """Region of Interest. """
@@ -75,6 +104,9 @@ class ROI():
         s = s+" - theta_y:       %f \n"%self.theta_y
         s = s+" - theta_z:       %f \n"%self.theta_z
         return s
+
+
+
 
 class Binning(): 
     """PET detectors binning. """
@@ -146,7 +178,7 @@ class PET_Static_Scan():
         self.interface = interface 
 
     def load_listmode_file(self, filename): 
-#        print "Loading listmode data from file.." #FIXME: implement 
+        #FIXME: implement 
         self._construct_ilang_model()        
        
     def project(self,activity=None,roi=None,attenuation=None): 
@@ -249,26 +281,31 @@ class PET_Dynamic_Scan():
         
     def load_listmode_file(self, hdr_filename, time_bins=None, data_filename=None): 
         """Load measurement data from a listmode file. """
-#        print "- Loading dynamic PET data from listmode file "+str(hdr_filename) 
+        print_debug("- Loading dynamic PET data from listmode file "+str(hdr_filename) )
         hdr = Interfile.load(hdr_filename) 
         #Extract information from the listmode header
         # 1) Determine the model of the scanner: 
         self.scanner_detected = False
         if hdr.has_key('originating system'): 
             if hdr['originating system']['value'] == 2008: 
-                print "- Detected Siemens Biograph mMR scanner. "
+                print_debug("- Detected Siemens Biograph mMR scanner. ")
                 self.set_interface(PET_Interface_mMR())
                 self.scanner_detected = True 
         if not self.scanner_detected: 
-            print "- No scanner detected, assuming petlink32 listmode. " 
+            print_debug("- No scanner detected, assuming petlink32 listmode. ")
             self.set_interface(PET_Interface_Petlink32()) 
         
-        # 2) Determine the path of the listmode data file (if not specified)
+        # 2) Guess the path of the listmode data file, if not specified or mis-specified; 
         if data_filename==None: 
             data_filename      = hdr['name of data file']['value'] 
-            
+        if not os.path.exists(data_filename): 
+            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)
+            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1]
+        if not os.path.exists(data_filename): 
+            raise FileNotFound("listmode data",data_filename) 
+
         # 3) Determine acquisition settings
-        n_packets              = hdr['total listmode word counts']['value']/4   # FIXME: is this right 
+        n_packets              = hdr['total listmode word counts']['value'] 
         scan_duration          = hdr['image duration']['value']*1000            # now milliseconds
         
         # 4) determine scanner parameters
@@ -280,17 +317,17 @@ class PET_Dynamic_Scan():
 
         # Determine the time binning pattern 
         if time_bins == None: 
-            time_bins = int32(linspace(scan_duration/DEFAULT_N_TIME_BINS,scan_duration,DEFAULT_N_TIME_BINS))
+            time_bins = int32(linspace(0,scan_duration,DEFAULT_N_TIME_BINS+1))
         elif isscalar(time_bins):    #time_bins in this case indicates the number of time bins
-            time_bins = int32(linspace(scan_duration/time_bins,scan_duration,time_bins)) 
+            time_bins = int32(linspace(0,scan_duration,time_bins+1)) 
 
         # Display information 
-#        print " - Number of packets:   %d      "%n_packets 
-#        print " - Scan duration:       %d [sec]"%scan_duration 
-#        print " - Listmode data file:  %s      "%data_filename 
-#        print " - Number of time bins: %d      "%len(time_bins) 
-#        print " - Time start:          %f [sec]"%0
-#        print " - Time end:            %f [sec]"%(time_bins[-1]/1000.0) 
+        print_debug(" - Number of packets:   %d      "%n_packets )
+        print_debug(" - Scan duration:       %d [sec]"%scan_duration )
+        print_debug(" - Listmode data file:  %s      "%data_filename )
+        print_debug(" - Number of time bins: %d      "%(len(time_bins)-1) )
+        print_debug(" - Time start:          %f [sec]"%(time_bins[ 0]/1000.0) )
+        print_debug(" - Time end:            %f [sec]"%(time_bins[-1]/1000.0) )
 
         # Load the listmode data 
         R = self.interface.load_listmode(data_filename,n_packets,time_bins,self.binning,n_radial_bins, n_angles, n_sinograms) 
@@ -299,11 +336,11 @@ class PET_Dynamic_Scan():
         self.N_time_bins  = R['N_time_bins'] 
         self.time_start   = R['time_start'] 
         self.time_end     = R['time_end'] 
-        self.time_bins    = time_bins[0:self.N_time_bins]  #the actual time bins are less than the requested time bins, truncate time_bins 
+        self.time_bins    = time_bins[0:self.N_time_bins+1]  #the actual time bins are less than the requested time bins, truncate time_bins 
         
         # Make list of PET_Static_Scan objects, one per bin
         self.dynamic = [] 
-        for t in range(len(time_bins)): 
+        for t in range(self.N_time_bins): 
             PET_t = PET_Static_Scan() 
             PET_t.set_interface(self.interface) 
             PET_t.set_binning(self.binning) 

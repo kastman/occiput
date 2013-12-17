@@ -1,11 +1,7 @@
 MANIFEST.in
 README.txt
 setup.py
-tomi/__init__.py
-tomi/core.py
-tomi/graphical_models.py
-tomi/inference.py
-tomi/scanners.py
+tomi/verbose.py
 tomi.egg-info/PKG-INFO
 tomi.egg-info/SOURCES.txt
 tomi.egg-info/dependency_links.txt
