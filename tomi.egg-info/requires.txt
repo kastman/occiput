@@ -1,0 +1,6 @@
+numpy >= 1.7.1
+simplewrap >= 0.1.0
+interfile >= 0.1.0
+petlink >= 0.1.0
+DisplayNode >= 0.1.0
+ilang >= 0.1.0

@@ -1,0 +1,58 @@
+Metadata-Version: 1.0
+Name: tomi
+Version: 0.1.0
+Summary: Tomographic Inference.
+Home-page: http://tomi.com/
+Author: Stefano Pedemonte
+Author-email: stefano.pedemonte@gmail.com
+License: LICENSE.txt
+Description: ====
+        tomi
+        ====
+        
+        Tomographic inference. 
+        Typical usage looks like this::
+        
+            #!/usr/bin/env python
+        
+            import tomi
+            # ...
+        
+        
+        Installation
+        ============
+        
+        Linux, MacOsX
+        -------------
+        
+        There are two ways to install under Linux and MacOsX: 
+        
+        1. pip install tomi
+        
+        2. python setup.py
+        
+        
+        Features
+        ========
+        
+        
+        Website
+        =======
+        
+        `toni home page <http://www.tomi.com/>`_. 
+        
+        
+        
+        
+Keywords: PET,SPECT,emission tomography,transmission tomography,tomographic reconstruction
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Other Environment
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
