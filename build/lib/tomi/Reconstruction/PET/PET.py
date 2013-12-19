@@ -38,7 +38,8 @@ from DisplayNode import DisplayNode
 
 # Set verbose level
 from tomi.verbose import *
-set_verbose_high()
+set_verbose_no_printing()
+#set_verbose_high()
 
 import Image as PIL 
 from numpy import isscalar, linspace, int32
@@ -184,7 +185,7 @@ class PET_Static_Scan():
     def project(self,activity=None,roi=None,attenuation=None): 
         # FIXME: resample here according to ROI 
         projection_data = PET_project_compressed(activity,attenuation,self._offsets,self._locations,self.binning,self.gpu_acceleration) 
-        return (porojection_data, self._locations, self._offsets)
+        return (projection_data, self._locations, self._offsets)
 
     def backproject(self, projection_data,roi=None,attenuation=None): 
         # FIXME: resample here according to ROI 
@@ -299,8 +300,10 @@ class PET_Dynamic_Scan():
         if data_filename==None: 
             data_filename      = hdr['name of data file']['value'] 
         if not os.path.exists(data_filename): 
-            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)
-            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1]
+            # cross platform compatibility: 
+            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)            
+            # search in the same location as the header file: 
+            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1] 
         if not os.path.exists(data_filename): 
             raise FileNotFound("listmode data",data_filename) 
 
