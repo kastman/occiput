@@ -1,0 +1,9 @@
+tomi.egg-info/
+*.pyc
+*.py~
+*.*~
+build/
+dist/
+*.so
+*.dll
+*.dylib

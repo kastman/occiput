@@ -38,7 +38,7 @@ from DisplayNode import DisplayNode
 
 # Set verbose level
 from tomi.verbose import *
-set_verbose_low()
+set_verbose_no_printing()
 #set_verbose_high()
 
 import Image as PIL 
@@ -185,7 +185,7 @@ class PET_Static_Scan():
     def project(self,activity=None,roi=None,attenuation=None): 
         # FIXME: resample here according to ROI 
         projection_data = PET_project_compressed(activity,attenuation,self._offsets,self._locations,self.binning,self.gpu_acceleration) 
-        return (porojection_data, self._locations, self._offsets)
+        return (projection_data, self._locations, self._offsets)
 
     def backproject(self, projection_data,roi=None,attenuation=None): 
         # FIXME: resample here according to ROI 
