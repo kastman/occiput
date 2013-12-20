@@ -2,7 +2,7 @@
 import Scintillators
 import Collimators
 
-
+import svgwrite
 
 
 
@@ -154,6 +154,100 @@ class SPECT(BaseScanner):
         sinogram = 0
         return sinogram
         
+    def _make_svg(self):
+        w = '100%'
+        h = '100%'
+        
+        dwg = svgwrite.Drawing('test.svg',size=(w,h), profile='full', debug=True)
+        dwg.viewbox(width=100, height=100)
+
+        # DETECTOR 
+        # collimator 
+        rect = dwg.add(dwg.rect(insert=(12, 30), size=(8, 40), rx=0.5, ry=0.5))
+        rect.fill('grey',opacity=0.5).stroke('black',width=0.3,opacity=0.001)
+
+        # scintillator
+        rect = dwg.add(dwg.rect(insert=(9, 30), size=(3, 40), rx=0.5, ry=0.5))
+        rect.fill('green',opacity=0.1).stroke('none',width=0.3,opacity=0.001)
+
+        # photomultipliers 
+        for i in range(8): 
+            rect = dwg.add(dwg.rect(insert=(1, 31.2+i*4.8), size=(8, 4), rx=0.3, ry=0.3))
+            rect.fill('grey',opacity=0.25).stroke('none',width=0.3,opacity=0.001)
+        
+        # IMAGING VOLUME
+        rect = dwg.add(dwg.rect(insert=(30, 30), size=(40, 40), rx=0.5, ry=0.5))
+        rect.fill('grey',opacity=0.02).stroke('grey',width=0.3,opacity=0.02)
+        
+        # GEOMETRIC NOTATIONS 
+        # circle, gantry rotation 
+        circle = dwg.add(dwg.circle(center=(50, 50), r=30))
+        circle.fill('none').stroke('grey', width=0.1).dasharray([0.5, 0.5]) 
+        # center
+        circle = dwg.add(dwg.circle(center=(50, 50), r=0.5))
+        circle.fill('grey',opacity=0.1).stroke('grey', width=0.1)    
+        line = dwg.add(dwg.line(start=(50-1,50), end=(50+1,50)))
+        line.stroke('grey', width=0.1) 
+        line = dwg.add(dwg.line(start=(50,50-1), end=(50,50+1)))
+        line.stroke('grey', width=0.1) 
+        
+        #line = dwg.add(dwg.polyline([(10, 10), (10, 100), (100, 100), (100, 10), (10, 10)],stroke='black', fill='none'))
+        self._svg_string = dwg.tostring() 
+        return self._svg_string
+
+    def _repr_svg_(self): 
+        self._make_svg()
+        return self._svg_string    
+
+
+
+class Gantry(): 
+    def __init__(self): 
+        self.svg_string = self.make_svg()
+
+    def make_svg(self):
+        w = '100%'
+        h = '100%'
+        
+        dwg = svgwrite.Drawing('test.svg',size=(w,h), profile='full', debug=True)
+        dwg.viewbox(width=100, height=100)
+
+        # DETECTOR 
+        # collimator 
+        rect = dwg.add(dwg.rect(insert=(12, 30), size=(8, 40), rx=0.5, ry=0.5))
+        rect.fill('grey',opacity=0.5).stroke('black',width=0.3,opacity=0.001)
+
+        # scintillator
+        rect = dwg.add(dwg.rect(insert=(9, 30), size=(3, 40), rx=0.5, ry=0.5))
+        rect.fill('green',opacity=0.1).stroke('none',width=0.3,opacity=0.001)
+
+        # photomultipliers 
+        for i in range(8): 
+            rect = dwg.add(dwg.rect(insert=(1, 31.2+i*4.8), size=(8, 4), rx=0.3, ry=0.3))
+            rect.fill('grey',opacity=0.25).stroke('none',width=0.3,opacity=0.001)
+        
+        # IMAGING VOLUME
+        rect = dwg.add(dwg.rect(insert=(30, 30), size=(40, 40), rx=0.5, ry=0.5))
+        rect.fill('grey',opacity=0.02).stroke('grey',width=0.3,opacity=0.02)
+        
+        # GEOMETRIC NOTATIONS 
+        # circle, gantry rotation 
+        circle = dwg.add(dwg.circle(center=(50, 50), r=30))
+        circle.fill('none').stroke('grey', width=0.1).dasharray([0.5, 0.5]) 
+        # center
+        circle = dwg.add(dwg.circle(center=(50, 50), r=0.5))
+        circle.fill('grey',opacity=0.1).stroke('grey', width=0.1)    
+        line = dwg.add(dwg.line(start=(50-1,50), end=(50+1,50)))
+        line.stroke('grey', width=0.1) 
+        line = dwg.add(dwg.line(start=(50,50-1), end=(50,50+1)))
+        line.stroke('grey', width=0.1) 
+        
+        #line = dwg.add(dwg.polyline([(10, 10), (10, 100), (100, 100), (100, 10), (10, 10)],stroke='black', fill='none'))
+        return dwg.tostring() 
+
+    def _repr_svg_(self): 
+        return self.svg_string 
+
 
 
 

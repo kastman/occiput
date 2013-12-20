@@ -45,6 +45,7 @@ import Image as PIL
 import ImageDraw
 from numpy import isscalar, linspace, int32
 import os
+import svgwrite
 
 
 
@@ -142,6 +143,36 @@ class Binning():
         s = s+" - N_v:                      %d \n"%self.N_v
         return s
 
+    def _make_svg(self):
+        w = '100%'
+        h = '100%'
+        
+        dwg = svgwrite.Drawing('test.svg',size=(w,h), profile='full', debug=True)
+        dwg.viewbox(width=100, height=100)
+        
+        # IMAGING VOLUME
+        rect = dwg.add(dwg.rect(insert=(30, 30), size=(40, 40), rx=0.5, ry=0.5))
+        rect.fill('grey',opacity=0.02).stroke('grey',width=0.3,opacity=0.02)
+        
+        # GEOMETRIC NOTATIONS 
+        # circle, gantry rotation 
+        circle = dwg.add(dwg.circle(center=(50, 50), r=30))
+        circle.fill('none').stroke('grey', width=0.1).dasharray([0.5, 0.5]) 
+        # center
+        circle = dwg.add(dwg.circle(center=(50, 50), r=0.5))
+        circle.fill('grey',opacity=0.1).stroke('grey', width=0.1)    
+        line = dwg.add(dwg.line(start=(50-1,50), end=(50+1,50)))
+        line.stroke('grey', width=0.1) 
+        line = dwg.add(dwg.line(start=(50,50-1), end=(50,50+1)))
+        line.stroke('grey', width=0.1) 
+        
+        #line = dwg.add(dwg.polyline([(10, 10), (10, 100), (100, 100), (100, 10), (10, 10)],stroke='black', fill='none'))
+        self._svg_string = dwg.tostring() 
+        return self._svg_string
+
+    def _repr_svg_(self): 
+        self._make_svg()
+        return self._svg_string    
 
         
         
