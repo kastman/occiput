@@ -42,6 +42,7 @@ set_verbose_no_printing()
 #set_verbose_high()
 
 import Image as PIL 
+import ImageDraw
 from numpy import isscalar, linspace, int32
 import os
 
@@ -181,7 +182,8 @@ class PET_Static_Scan():
     def load_listmode_file(self, filename): 
         #FIXME: implement 
         self._construct_ilang_model()        
-       
+        return self 
+        
     def project(self,activity=None,roi=None,attenuation=None): 
         # FIXME: resample here according to ROI 
         projection_data = PET_project_compressed(activity,attenuation,self._offsets,self._locations,self.binning,self.gpu_acceleration) 
@@ -301,16 +303,29 @@ class PET_Dynamic_Scan():
             self.set_interface(PET_Interface_Petlink32()) 
         
         # 2) Guess the path of the listmode data file, if not specified or mis-specified; 
-        if data_filename==None: 
-            data_filename      = hdr['name of data file']['value'] 
+        #  1 - see if the specified listmode data file exists 
+        if data_filename!=None: 
+            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)          # cross platform compatibility 
+            if not os.path.exists(data_filename): 
+                raise FileNotFound("listmode data",data_filename)  
+        #  2 - if the listmode data file is not specified, try with the name (and full path) contained in the listmode header
+        data_filename      = hdr['name of data file']['value']
+        data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)              # cross platform compatibility
         if not os.path.exists(data_filename): 
-            # cross platform compatibility: 
-            data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)            
-            # search in the same location as the header file: 
-            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1] 
-        if not os.path.exists(data_filename): 
-            raise FileNotFound("listmode data",data_filename) 
-
+        #  3 - if it doesn't exist, look in the same path as the header file for the listmode data file with name specified in the listmode header file 
+            data_filename = os.path.split(hdr_filename)[0]+os.path.sep+os.path.split(data_filename)[-1]  
+            if not os.path.exists(data_filename): 
+        #  4 - if it doesn't exist, look in the same path as the header file for the listmode data file with same name as the listmode header file, replacing the extension: ".l.hdr -> .l" 
+                if hdr_filename.endswith(".l.hdr"): 
+                    data_filename = hdr_filename.replace(".l.hdr",".l") 
+                    if not os.path.exists(data_filename):     
+                        raise FileNotFound("listmode data",data_filename)  
+        #  5 - if it doesn't exist, look in the same path as the header file for the listmode data file with same name as the listmode header file, replacing the extension: ".hdr -> .l" 
+                elif hdr_filename.endswith(".hdr"): 
+                    data_filename = hdr_filename.replace(".hdr",".l") 
+                    if not os.path.exists(data_filename):     
+                        raise FileNotFound("listmode data",data_filename)  
+                        
         # 3) Determine acquisition settings
         n_packets              = hdr['total listmode word counts']['value'] 
         scan_duration          = hdr['image duration']['value']*1000            # now milliseconds
@@ -367,7 +382,8 @@ class PET_Dynamic_Scan():
 
         # Load static measurement data 
         self.load_static_measurement() 
-
+        return self 
+        
     def load_static_measurement(self): 
         R = self.interface.get_measurement_static() 
         self.time_start               = R['time_start']
@@ -386,7 +402,24 @@ class PET_Dynamic_Scan():
                
     def uncompress(self, projection_data): 
         return self.interface.uncompress(self._offsets, projection_data, self._locations, self.binning.N_u, self.binning.N_v) 
-                      
+               
+    def display_sequence_in_browser(self): 
+        return self.display_sequence(open_browser=True) 
+        
+    def display_sequence(self,open_browser=False): 
+        im_size = self.uncompressed_measurement().to_image().size
+        IM = PIL.new("RGB",(im_size[0],im_size[1]*self.N_time_bins))
+        for i in range(self.N_time_bins):
+            im = self[i].uncompressed_measurement().to_image() 
+            #draw = ImageDraw.Draw(im)
+            #draw.rectangle([(0,0),im_size])
+            IM.paste(im,(0,im_size[1]*i)) 
+        d = DisplayNode() 
+        return d.display('image',IM.rotate(90),open_browser)
+    
+    def _repr_html_(self):
+        return self.display_sequence()._repr_html_()
+
     def __repr__(self): 
         """Display information about Dynamic_PET_Scan"""
         s = "Dynamic PET acquisition:  \n" 
