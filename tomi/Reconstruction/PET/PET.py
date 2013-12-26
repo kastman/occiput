@@ -46,7 +46,7 @@ import ImageDraw
 from numpy import isscalar, linspace, int32
 import os
 import svgwrite
-
+import ipy_table 
 
 
 DEFAULT_BINNING = {      "n_axial":                252,
@@ -80,8 +80,16 @@ class FileNotFound(Exception):
         return "Cannot find file '%s' (%s)."%(self.filename, self.msg)
 
 
+def millisec_to_min_sec(ms):
+    totsec = int(ms)/1000
+    sec = totsec%60
+    min = int(ms)/1000/60 
+    msec = ms%(1000)
+    return str(min).zfill(2)+" [min]  "+ str(sec).zfill(2)+" [sec]  " + str(msec).zfill(3)+" [msec]"
 
 
+
+    
 class ROI(): 
     """Region of Interest. """
     def __init__(self,dictionary=None):
@@ -108,8 +116,13 @@ class ROI():
         s = s+" - theta_z:       %f \n"%self.theta_z
         return s
 
-
-
+    def _repr_html_(self):
+        table_data = [['x',self.x],['y',self.y],['z',self.z],['theta_x',self.theta_x],['theta_y',self.theta_y],['theta_z',self.theta_z]] 
+        table = ipy_table.make_table(table_data)
+        table = ipy_table.apply_theme('basic_left')
+        #table = ipy_table.set_column_style(0, color='lightBlue')
+        table = ipy_table.set_global_style(float_format="%3.3f")        
+        return table._repr_html_()
 
 class Binning(): 
     """PET detectors binning. """
@@ -133,16 +146,25 @@ class Binning():
         
     def __repr__(self): 
         s = "PET Binning: \n"        
-        s = s+" - N_axial bins:             %d \n"%self.N_axial 
-        s = s+" - N_azimuthal bins:         %d \n"%self.N_azimuthal 
-        s = s+" - Axial angular step:       %f \n"%self.angular_step_axial 
-        s = s+" - Azimuthal angular step:   %f \n"%self.angular_step_azimuthal 
+        s = s+" - N_axial_bins:             %d \n"%self.N_axial 
+        s = s+" - N_azimuthal_bins:         %d \n"%self.N_azimuthal 
+        s = s+" - Angular_step_axial:       %f \n"%self.angular_step_axial 
+        s = s+" - Angular_step_azimuthal:   %f \n"%self.angular_step_azimuthal 
         s = s+" - Size_u:                   %f \n"%self.size_u
         s = s+" - Size_v:                   %f \n"%self.size_v        
         s = s+" - N_u:                      %d \n"%self.N_u
         s = s+" - N_v:                      %d \n"%self.N_v
         return s
 
+    def _repr_html_(self):
+        table_data = [['N_axial bins',self.N_axial_bins],['N_azimuthal_bins',self.N_azimuthal_bins],['Angular_step_axial',self.angular_step_axial],
+        ['Angular_step_azimuthal',self.angular_step_azimuthal],['Size_u',self.size_u],['Size_v',self.size_v],['N_v',self.N_v],['N_v',self.N_v]] 
+        table = ipy_table.make_table(table_data)
+        table = ipy_table.apply_theme('basic_left')
+        #table = ipy_table.set_column_style(0, color='lightBlue')
+        table = ipy_table.set_global_style(float_format="%3.3f")        
+        return table._repr_html_()
+        
     def _make_svg(self):
         w = '100%'
         h = '100%'
@@ -259,9 +281,10 @@ class PET_Static_Scan():
         
     def __repr__(self): 
         s = "Static PET acquisition:  \n" 
-        s = s+" - Time_start:                   %d [ms] \n"%self.time_start 
-        s = s+" - Time_end:                     %d [ms] \n"%self.time_end 
-        s = s+" - N_counts:                     %d      \n"%self.N_counts 
+        s = s+" - Time_start:                   %s \n"%millisec_to_min_sec(self.time_start)
+        s = s+" - Time_end:                     %s \n"%millisec_to_min_sec(self.time_end)
+        s = s+" - Duration:                     %s \n"%millisec_to_min_sec(self.time_end-self.time_start)
+        s = s+" - N_counts:                     %d \n"%self.N_counts 
         s = s+" = Interface: \n"
         s = s+"     - Name:                     %s \n"%self.interface.name 
         s = s+"     - Manufacturer:             %s \n"%self.interface.manufacturer 
@@ -276,6 +299,18 @@ class PET_Static_Scan():
         s = s+"     - N_u:                      %s \n"%self.binning.N_u
         s = s+"     - N_v:                      %s \n"%self.binning.N_v
         return s
+
+    def _repr_html_(self):
+        table_data = [['Time_start',millisec_to_min_sec(self.time_start)],
+        ['Time_end',millisec_to_min_sec(self.time_end)],
+        ['Duration',millisec_to_min_sec(self.time_end-self.time_start)],
+        ['N_counts',self.N_counts],
+        ['Name',self.interface.name],['Manufacturer',self.interface.manufacturer],['Version',self.interface.version], ] 
+        table = ipy_table.make_table(table_data)
+        table = ipy_table.apply_theme('basic_left')
+        #table = ipy_table.set_column_style(0, color='lightBlue')
+        table = ipy_table.set_global_style(float_format="%3.3f")        
+        return table._repr_html_()
 
     def __del__(self):
         del(self.interface) 
@@ -448,31 +483,47 @@ class PET_Dynamic_Scan():
         d = DisplayNode() 
         return d.display('image',IM.rotate(90),open_browser)
     
-    def _repr_html_(self):
-        return self.display_sequence()._repr_html_()
-
     def __repr__(self): 
         """Display information about Dynamic_PET_Scan"""
         s = "Dynamic PET acquisition:  \n" 
-        s = s+" - N_time_bins:                  %d      \n"%self.N_time_bins 
-        s = s+" - Time_start:                   %d [ms] \n"%self.time_start 
-        s = s+" - Time_end:                     %d [ms] \n"%self.time_end 
-        s = s+" - N_counts:                     %d      \n"%self.N_counts 
-        s = s+" - Mean time bin duration:       %d [ms] \n"%0 #FIXME 
-        s = s+" * Interface: \n" 
-        s = s+"     - Name:                     %s \n"%self.interface.name 
-        s = s+"     - Manufacturer:             %s \n"%self.interface.manufacturer 
-        s = s+"     - Version:                  %s \n"%self.interface.version 
-        s = s+" * Binning: \n" 
-        s = s+"     - N_axial bins:             %d \n"%self.binning.N_axial 
-        s = s+"     - N_azimuthal bins:         %d \n"%self.binning.N_azimuthal 
-        s = s+"     - Axial angular step:       %f \n"%self.binning.angular_step_axial 
-        s = s+"     - Azimuthal angular step:   %f \n"%self.binning.angular_step_azimuthal 
-        s = s+"     - Size_u:                   %f \n"%self.binning.size_u
-        s = s+"     - Size_v:                   %f \n"%self.binning.size_v        
-        s = s+"     - N_u:                      %s \n"%self.binning.N_u
-        s = s+"     - N_v:                      %s \n"%self.binning.N_v
+        s = s+" - N_time_bins:                  %d \n"%self.N_time_bins 
+        s = s+" - Time_start:                   %s \n"%millisec_to_min_sec(self.time_start)
+        s = s+" - Time_end:                     %s \n"%millisec_to_min_sec(self.time_end)
+        s = s+" - N_counts:                     %d \n"%self.N_counts 
+        s = s+" - Mean time bin duration:       %d [sec] \n"%0 #FIXME 
+        if self.interface != None: 
+            s = s+" * Interface: \n" 
+            s = s+"     - Name:                     %s \n"%self.interface.name 
+            s = s+"     - Manufacturer:             %s \n"%self.interface.manufacturer 
+            s = s+"     - Version:                  %s \n"%self.interface.version 
+        if self.binning != None:
+            s = s+" * Binning: \n" 
+            s = s+"     - N_axial bins:             %d \n"%self.binning.N_axial 
+            s = s+"     - N_azimuthal bins:         %d \n"%self.binning.N_azimuthal 
+            s = s+"     - Axial angular step:       %f \n"%self.binning.angular_step_axial 
+            s = s+"     - Azimuthal angular step:   %f \n"%self.binning.angular_step_azimuthal 
+            s = s+"     - Size_u:                   %f \n"%self.binning.size_u
+            s = s+"     - Size_v:                   %f \n"%self.binning.size_v        
+            s = s+"     - N_u:                      %s \n"%self.binning.N_u
+            s = s+"     - N_v:                      %s \n"%self.binning.N_v
         return s
+
+#    def _repr_html_(self):
+#        return self.display_sequence()._repr_html_()
+
+    def _repr_html_(self):
+        table_data = [['N_time_bins',self.N_time_bins],
+        ['Time_start',millisec_to_min_sec(self.time_start)],
+        ['Time_end',millisec_to_min_sec(self.time_end)],
+        ['Duration',millisec_to_min_sec(self.time_end-self.time_start)],
+        ['N_counts',self.N_counts],]
+        if self.interface: 
+            table_data += [['Name',self.interface.name],['Manufacturer',self.interface.manufacturer],['Version',self.interface.version], ]
+        table = ipy_table.make_table(table_data)
+        table = ipy_table.apply_theme('basic_left')
+        #table = ipy_table.set_column_style(0, color='lightBlue')
+        table = ipy_table.set_global_style(float_format="%3.3f")        
+        return table._repr_html_()
 
     def __iter__(self): 
         """This method makes the object iterable. """

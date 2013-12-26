@@ -49,6 +49,7 @@ setup(
         "petlink >= 0.1.0", 
         "DisplayNode >= 0.1.0", 
         "ilang >= 0.1.0", 
+        "ipy_table >= 1.11.0",  
     ], 
 ) 
 

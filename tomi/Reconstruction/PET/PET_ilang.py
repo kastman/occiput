@@ -18,8 +18,10 @@ class PET_Static_Poisson(Model):
     variables = {'lambda':'continuous','alpha':'continuous','z':'discrete'} 
     dependencies = [['lambda','z','directed'],['alpha','z','directed']]
 
-    def __init__(self, PET_scan):
-        Model.__init__(self, PET_scan)
+    def __init__(self, PET_scan, name=None):
+        if name == None:  
+            name = self.__class__.__name__
+        Model.__init__(self, name) 
         # PET scan
         self.PET_scan = PET_scan    
         # variables         
@@ -56,8 +58,10 @@ class PET_Dynamic_Poisson(Model):
     variables = {'lambda':'continuous','alpha':'continuous','roi_1':'continuous','roi_1':'continuous','z_1':'discrete','z_2':'discrete'} 
     dependencies = [['lambda','z_1','directed'],['lambda','z_2','directed'],['alpha','z_1','directed'],['alpha','z_2','directed'],['roi_1','z_1','directed'],['roi_2','z_2','directed']] 
 
-    def __init__(self, PET_scan):
-        Model.__init__(self)    
+    def __init__(self, PET_scan, name=None): 
+        if name == None:  
+            name = self.__class__.__name__
+        Model.__init__(self, name) 
         # PET scan object: 
         self.PET_scan = PET_scan 
         self.N_time_bins = self.PET_scan.N_time_bins 
