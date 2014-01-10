@@ -1,16 +1,17 @@
 
-# tomi - Tomographic Inference 
+# occiput 
 # Stefano Pedemonte
 # Harvard University, Martinos Center for Biomedical Imaging 
 # Dec. 2013, Boston, MA
 
 
 
-import ilang
-import ilang.Models
-from ilang.Models import Model
+import ilang 
+import ilang.Models 
+from ilang.Models import Model 
+from ilang.Graphs import ProbabilisticGraphicalModel 
 
-__all__ = ['PET_Static_Poisson','PET_Dynamic_Poisson']
+__all__ = ['PET_Static_Poisson','PET_Dynamic_Poisson','ProbabilisticGraphicalModel']
 
 
 
@@ -24,30 +25,33 @@ class PET_Static_Poisson(Model):
         Model.__init__(self, name) 
         # PET scan
         self.PET_scan = PET_scan    
-        # variables         
-        self._lambda = None
-        self._alpha  = None 
-        self._roi    = None 
-        
+        # small number
+        self.EPS = 1e9
+
     def set_PET_scan(self, PET_scan): 
         self.PET_scan = PET_scan 
 
     def init(self): 
         pass 
 
-    def log_conditional_probability_lambda(self): 
+    def log_conditional_probability_lambda(self,lambda_): 
+        alpha = self.get_value('alpha')
         return 0 
 
-    def log_conditional_probability_gradient_lambda(self): 
-        projection_data = self.PET_scan.get_projection(self._lambda, self._roi, self._alpha) 
-        gradient        = self.PET_scan.get_backprojection(self._measurement_data/projection_data+EPS, roi, self._alpha) 
+    def log_conditional_probability_gradient_lambda(self,lambda_): 
+        alpha = self.get_value('alpha')
+        projection_data = self.PET_scan.project(lambda_, alpha) 
+        Nx = lambda_.shape[0]; Ny = lambda_.shape[1]; Nz = lambda_.shape[2]
+        gradient        = self.PET_scan.backproject(self.PET_scan.get_measurement()[0]/(projection_data[0]+self.EPS), Nx,Ny,Nz, alpha) 
         return gradient 
 
-    def log_conditional_probability_alpha(self): 
+    def log_conditional_probability_alpha(self,alpha): 
+        lambda_ = self.get_value('lambda') 
         return 0 
 
-    def log_conditional_probability_gradient_alpha(self): 
-        return numpy.zeros([100,1])
+    def log_conditional_probability_gradient_alpha(self,alpha): 
+        lambda_ = self.get_value('lambda')  
+        return 0
         
     def sample_conditional_probability_z(self): 
         return 0    

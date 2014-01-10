@@ -1,7 +1,7 @@
 
-# tomi - Tomographic Inference 
+# occiput - Computational engine for volumetric imaging 
 # Stefano Pedemonte
-# Harvard University
+# Harvard University, Martinos Center for Biomedical Imaging 
 # Dec 2013, Boston 
 
 
@@ -11,21 +11,24 @@ from glob import glob
 
 
 setup(
-    name='tomi',
+    name='occiput',
     version='0.1.0',
     author='Stefano Pedemonte',
     author_email='stefano.pedemonte@gmail.com',
-    packages=['tomi', 
-              'tomi.test', 
-              'tomi.Reconstruction', 
-              'tomi.Reconstruction.PET', 
-              'tomi.Reconstruction.SPECT', 
-              'tomi.Reconstruction.CT', 
-              'tomi.Transformation', 
-              'tomi.Classification',                  
+    packages=['occiput', 
+              'occiput.test', 
+              'occiput.Reconstruction', 
+              'occiput.Reconstruction.PET', 
+              'occiput.Reconstruction.SPECT', 
+              'occiput.Reconstruction.CT', 
+              'occiput.Transformation', 
+              'occiput.Classification', 
+              'occiput.DataSources', 
+              'occiput.DataSources.Synthetic', 
+              'occiput.DataSources.Files', 
               ],
     scripts=[],
-    url='http://tomi.com/',
+    url='http://tomographylab.scienceontheweb.net',
     license='LICENSE.txt',
     description='Tomographic Inference.',
     long_description=open('README.txt').read(),

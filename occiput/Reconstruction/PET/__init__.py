@@ -1,10 +1,9 @@
 
-# tomi - Tomographic Inference 
+# occiput - Tomographic Inference 
 # Stefano Pedemonte
 # Harvard University, Martinos Center for Biomedical Imaging 
 # Dec. 2013, Boston, MA
 
 
-import Reconstruction
-import Transformation
-import Classification
+from PET import * 
+#from PET_ilang import * 
