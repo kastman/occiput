@@ -1,6 +1,7 @@
 MANIFEST.in
 README.txt
 setup.py
+occiput/Core.py
 occiput/__init__.py
 occiput/verbose.py
 occiput.egg-info/PKG-INFO
@@ -10,8 +11,8 @@ occiput.egg-info/requires.txt
 occiput.egg-info/top_level.txt
 occiput/Classification/__init__.py
 occiput/DataSources/__init__.py
-occiput/DataSources/Files/Files.py
-occiput/DataSources/Files/__init__.py
+occiput/DataSources/FileSources/FileSources.py
+occiput/DataSources/FileSources/__init__.py
 occiput/DataSources/Synthetic/Synthetic.py
 occiput/DataSources/Synthetic/__init__.py
 occiput/Reconstruction/__init__.py
@@ -24,4 +25,6 @@ occiput/Reconstruction/SPECT/SPECT.py
 occiput/Reconstruction/SPECT/Scintillators.py
 occiput/Reconstruction/SPECT/__init__.py
 occiput/Transformation/__init__.py
+occiput/Visualization/Visualization.py
+occiput/Visualization/__init__.py
 occiput/test/__init__.py

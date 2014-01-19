@@ -1,4 +1,4 @@
 
 import Synthetic
-import Files
+from FileSources import FileSource
 

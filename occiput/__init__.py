@@ -5,10 +5,12 @@
 # Dec. 2013, Boston, MA
 
 
+import Core
 import Reconstruction
 import Transformation
 import Classification
-import Data
+import Visualization
+import DataSources
 
 
 def set_ipython_logo(): 
