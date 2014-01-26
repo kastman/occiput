@@ -40,13 +40,13 @@ from DisplayNode import DisplayNode
 
 # Import occiput: 
 from occiput.Core import Volume, RigidVolume
-from occiput.Visualization import ProgressBar
+from occiput.Visualization import *
 from occiput.DataSources.Synthetic import uniform_cylinder
 
 # Import other modules
 import Image as PIL 
 import ImageDraw
-from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray
+from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
 from numpy.random import randint 
 import os
 import svgwrite
@@ -98,8 +98,9 @@ DEFAULT_BACKPROJECTION_PARAMETERS  =  {
                          "direction":                1,      # affects performance only, between 1 and 6; 2 and 5 are normally the best value
                          "block_size":               512 }   # affects performance only
 
-DEFAULT_N_TIME_BINS = 30
-
+DEFAULT_N_TIME_BINS       = 30
+DEFAULT_SUBSET_SIZE       = 20
+DEFAULT_RECON_ITERATIONS  = 10
 EPS = 1e-6
 
 
@@ -418,18 +419,18 @@ class PET_Static_Scan():
         # define the ilang probabilistic model 
         self.ilang_model = PET_Static_Poisson(self) 
         # construct a basic Directed Acyclical Graph
-        self.dag         = ProbabilisticGraphicalModel(['lambda','alpha','z']) 
-        self.dag.set_nodes_given(['z','alpha'],True) 
-        self.dag.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'z'}) 
+        self.graph         = ProbabilisticGraphicalModel(['lambda','alpha','z']) 
+        self.graph.set_nodes_given(['z','alpha'],True) 
+        self.graph.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'z'}) 
         # construct a basic sampler object
-        self.sampler     = Sampler(self.dag)
+        self.sampler     = Sampler(self.graph)
  
     def set_binning(self, binning): 
         if isinstance(binning,Binning): 
             self.binning = binning
         else:
             self.binning = Binning(binning)
-        self._subset_generator = SubsetGenerator(self.binning.N_axial,self.binning.N_azimuthal) 
+        self._subsets_generator = SubsetGenerator(self.binning.N_axial,self.binning.N_azimuthal) 
     
     def set_interface(self,interface): 
         self.interface = interface 
@@ -642,26 +643,26 @@ class PET_Static_Scan():
 
 #    def reconstruct_activity(self,Nx,Ny,Nz,method='MLEM',iterations=100,roi=None,attenuation=None,roi_attenuation=None): 
 #        # Use ilang -inference language - to do the reconstruction
-#        # (if emission data has been loaded, then the instance of the object of this class has a 'dag' attribute)
+#        # (if emission data has been loaded, then the instance of the object of this class has a 'graph' attribute)
 #        if method == 'MLEM': 
 #           # initialise the ilang variables 
-#            if self.dag.get_node_value('lambda') == None: 
-#                self.dag.set_node_value('lambda',ones((Nx,Ny,Nz),dtype=float32)) 
-#            if self.dag.get_node_value('alpha') == None: 
-#                self.dag.set_node_value('alpha',zeros((Nx,Ny,Nz),dtype=float32)) 
+#            if self.graph.get_node_value('lambda') == None: 
+#                self.graph.set_node_value('lambda',ones((Nx,Ny,Nz),dtype=float32)) 
+#            if self.graph.get_node_value('alpha') == None: 
+#                self.graph.set_node_value('alpha',zeros((Nx,Ny,Nz),dtype=float32)) 
 #            # reconstruct
 #            self.sampler.set_node_sampling_method_manual('lambda','ExpectationMaximization')
 #            self.sampler.sample_node('lambda', nsamples=iterations, trace=False)
 #        else: 
 #            raise UnknownParameter('method %s unknown'%str(method)) 
-#        return self.dag.get_node_value('lambda')
+#        return self.graph.get_node_value('lambda')
         
     def set_activity(self,activity): 
-        self.dag.set_node_value('lambda',activity) 
+        self.graph.set_node_value('lambda',activity) 
         # FIXME: how about the roi ? 
 
     def set_attenuation(self,attenuation): 
-        self.dag.set_node_value('alpha',attenuation) 
+        self.graph.set_node_value('alpha',attenuation) 
         # FIXME: how about the roi ? 
 
     def get_normalization(self): 
@@ -683,19 +684,22 @@ class PET_Static_Scan():
 
     def get_mask(self): 
         if not hasattr(self,"_mask"): 
-            self._mask = uniform_cylinder(self.activity_shape,self.activity_size,[0.5*self.activity_size[0],0.5*self.activity_size[1],0.5*self.activity_size[2]], 0.5*min(self.activity_size[0],self.activity_size[1]),self.activity_size[2],2,1,0)
+            # radius: half of the minimum dimension minus one voxel
+            radius = 1.2 * 0.5 *  min( self.activity_size[0], self.activity_size[1] )
+            #radius = min( self.activity_size[0]/self.activity_shape[0]*(self.activity_shape[0]/2-1), self.activity_size[1]/self.activity_shape[1]*(self.activity_shape[1]/2-1) )
+            self._mask = uniform_cylinder(self.activity_shape, self.activity_size, [0.5*self.activity_size[0], 0.5*self.activity_size[1], 0.5*self.activity_size[2]], radius, self.activity_size[2], 2, 1, 0)
         return self._mask
         
-    def estimate_activity(self,iterations = 6, subset_size=None, subset_mode='random'): 
+    def estimate_activity(self,iterations = DEFAULT_RECON_ITERATIONS, subset_size = DEFAULT_SUBSET_SIZE, subset_mode='random'): 
         progress_bar = ProgressBar() 
         progress_bar.set_percentage(0.1)
-        # Subsets: 
-        if subset_size==None:
-            subsets_matrix=None
-        else: 
-            subsets_matrix = self._subset_generator.new_subset(subset_mode,subset_size)
         activity = ones(self.activity_shape,dtype=float32)
         for i in range(iterations):
+            # Subsets: 
+            if subset_size==None:
+                subsets_matrix=None
+            else: 
+                subsets_matrix = self._subsets_generator.new_subset(subset_mode,subset_size)
             proj = self.project(activity,subsets_matrix=subsets_matrix)
             if subset_size==None:
                 norm = self.get_normalization()  
@@ -712,26 +716,28 @@ class PET_Static_Scan():
         progress_bar.set_percentage(100.0)
         return RigidVolume(activity)
             
-    def volume_render(self,volume,scale=None): 
+    def volume_render(self,volume,scale=1.0): 
         # FIXME: make a VolumeRenderer class and use it, the following is a quick fix: 
         R = self.interface.full_sampling(180,1,256,256) 
         offsets   = R['offsets']
         locations = R['locations']
-        #proj = self.project(volume,offsets=offsets,locations=locations) 
         if isinstance(volume,ndarray): 
             volume = float32(volume)
         else: 
             volume = float32(volume.data)
-        proj = PET_project_compressed(volume,None,offsets,locations, 
-            180, 1, pi/180, 0.0, 256,256, 256.0, 256.0, 
+        subsets_generator = SubsetGenerator(180,1) 
+        subsets_matrix=subsets_generator.all_active() 
+        mask = uniform_cylinder(volume.shape,volume.shape,[0.5*volume.shape[0],0.5*volume.shape[1],0.5*volume.shape[2]], 0.5*min(volume.shape[0]-1,volume.shape[1]),volume.shape[2],2,1,0)
+        volume[where(mask.data==0)]=0.0
+        proj = PET_project_compressed(volume,None,offsets,locations, subsets_matrix, 
+            180, 1, pi/180, 0.0, 256, 256, 256.0, 256.0, 
             256.0, 256.0, 256.0,  
             256.0, 256.0, 256.0, 
             128.0, 128.0, 128.0, 0.0, 0.0, 0.0,  
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
             1, 256, 1.5, 
             0.0, 0.0, 0,
-            2, 512)
-            
+            2, 512) 
         proj[where(proj>proj.max()/scale )]=proj.max()/scale
         return self.uncompress(proj,offsets=offsets,locations=locations,N_u=256,N_v=256) 
 
@@ -819,10 +825,10 @@ class PET_Dynamic_Scan():
     def _construct_ilang_model(self):
         # define the ilang probabilistic model 
         self.ilang_model = PET_Dynamic_Poisson(self)  
-        # construct a basic Directed Acyclical Graph
-        #self.dag         = ProbabilisticGraphicalModel(['lambda','alpha','z']) 
-        #self.dag.set_nodes_given(['counts','alpha'],True) 
-        #self.dag.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'z'}) 
+        # construct the Directed Acyclical Graph
+#        self.graph         = ProbabilisticGraphicalModel(['lambda','alpha','counts']) 
+#        self.graph.set_nodes_given(['counts','alpha'],True) 
+#        self.graph.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'counts'}) 
 
     def load_listmode_file(self, hdr_filename, time_bins=None, data_filename=None): 
         """Load measurement data from a listmode file. """
@@ -962,17 +968,20 @@ class PET_Dynamic_Scan():
             N_v=self.binning.N_v
         return self.interface.uncompress(offsets, projection_data, locations, N_u, N_v) 
                
-    def display_measurements_in_browser(self): 
-        return self.display_sequence(open_browser=True) 
+    def display_measurements_in_browser(self,scale=None): 
+        return self.display_sequence(scale=scale,open_browser=True) 
         
-    def display_measurements(self,open_browser=False): 
+    def display_measurements(self,scale=None,open_browser=False): 
         #im_size = self.uncompressed_measurement().to_image().size
-        #IM = PIL.new("RGB",(im_size[0],im_size[1]*self.N_time_bins))
+        #IM = PIL.new("RGB",(im_size[0],im_size[1]*self.N_time_bins)) 
+        progress_bar = ProgressBar(height='6px', width='100%%', background_color=LIGHT_GRAY, foreground_color=GRAY)
         images = []
         for i in range(self.N_time_bins):
-            im = self[i].uncompressed_measurement().to_image() 
+            im = self[i].uncompressed_measurement().to_image(scale=scale) 
             #IM.paste(im,(0,im_size[1]*i)) 
             images.append(im)
+            progress_bar.set_percentage(i*100.0/self.N_time_bins)
+        progress_bar.set_percentage(100.0)
         d = DisplayNode() 
         return d.display('tipix',images,open_browser)
         #return d.display('image',IM.rotate(90),open_browser)

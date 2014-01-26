@@ -12,10 +12,12 @@ __all__ = ['FileSource']
 
 import nibabel
 import Image
-from DisplayNode import DisplayNode
+from occiput.Core import Volume 
 import numpy 
 
-class FileSource(object):
+
+
+class FileSource(Volume):
     def __init__(self,filename=None):
         self.nifti_image=None
         if filename != None: 
@@ -23,6 +25,7 @@ class FileSource(object):
 
     def load(self,file): 
         self.nifti_image = nibabel.load(file) 
+        Volume.__init__(self, self.get_data())
 
     def get_data(self): 
         return self.nifti_image.get_data() 
@@ -93,31 +96,8 @@ class FileSource(object):
             if rotate: 
                 im = im.rotate(rotate)
         return im
-        
 
-    # display
-    def display_in_browser(self,axis=0,shrink=256,rotate=90,scale_factor=None): 
-        if scale_factor == None: 
-            scale_factor = 255/(self.get_data().max()+1e-9)
-        D = DisplayNode()
-        images = []
-        for i in range(self.get_shape()[axis]): 
-            im = self.to_image(i,axis,normalise=True,scale_factor=scale_factor,shrink=shrink,rotate=rotate)
-            images.append(im) 
-        D.display_in_browser('tipix', images)  
-        
-    def display(self,axis=0,shrink=256,rotate=90,scale_factor=None): 
-        if scale_factor == None: 
-            scale_factor = 255/(self.get_data().max()+1e-9)
-        D = DisplayNode()
-        images = []
-        for i in range(self.get_shape()[axis]): 
-            im = self.to_image(i,axis,normalise=True,scale_factor=scale_factor,shrink=shrink,rotate=rotate)
-            images.append(im) 
-        return D.display('tipix', images)   
 
-    def _repr_html_(self): 
-        return self.display()._repr_html_()
 
 
 

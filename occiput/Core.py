@@ -11,7 +11,7 @@ __all__ = ['Volume','RigidVolume']
 import DisplayNode 
 import numpy
 import Image
-from occiput.Visualization import ProgressBar
+from occiput.Visualization import ProgressBar, LIGHT_GRAY, GRAY
 
 
 XYZ_ROTATION = 0
@@ -19,10 +19,6 @@ XYZ_ROTATION = 0
 
 
 class Volume(object):
-    pass 
-
-
-class RigidVolume(Volume): 
     def __init__(self,data=None, scale=None, translation=None, rotation=None, rotation_order=None):
         if data==None:  
             self.data = numpy.asarray([]) 
@@ -120,20 +116,25 @@ class RigidVolume(Volume):
                 im = im.rotate(rotate)
         return im
 
-    def display_in_browser(self,axis=0,shrink=256,rotate=90,scale_factor=None): 
-        self.display(axis,shrink,rotate,scale_factor,open_browser=True) 
+    def display_in_browser(self,axis=0,shrink=256,rotate=90,subsample_slices=None,scale_factor=None): 
+        self.display(axis,shrink,rotate,subsample_slices,scale_factor,open_browser=True) 
         
-    def display(self,axis=0,shrink=256,rotate=90,scale_factor=None,open_browser=False): 
+    def display(self,axis=0,shrink=256,rotate=90,subsample_slices=None,scale_factor=None,open_browser=False): 
         if scale_factor == None: 
             scale_factor = 255/(self.get_data().max()+1e-9)
         D = DisplayNode.DisplayNode()
         images = []
-        #bar = ProgressBar()
+        bar = ProgressBar(height='6px', width='100%%', background_color=LIGHT_GRAY, foreground_color=GRAY)
         
-        for i in range(self.get_shape()[axis]): 
+        if subsample_slices==None: 
+            subsample_slices = int(self.get_shape()[axis]/256)
+        if subsample_slices==0: 
+            subsample_slices=1
+        for i in range(0,self.get_shape()[axis],subsample_slices): 
+            bar.set_percentage(i*100.0/(self.get_shape()[axis])*subsample_slices)
             im = self.to_image(i,axis,normalise=True,scale_factor=scale_factor,shrink=shrink,rotate=rotate)
             images.append(im) 
-            #bar.set_percentage(i*100.0/(self.get_shape()[axis]))
+        bar.set_percentage(100.0)
         return D.display('tipix', images,open_browser)   
 
     def _repr_html_(self): 
@@ -145,3 +146,10 @@ class RigidVolume(Volume):
     rotation       = property(get_rotation, set_rotation, None,"Rotation of the volume")
     rotation_order = property(get_rotation_order, set_rotation_order, None,"Order of rotation") 
     sform          = property(get_sform_matrix, set_sform_matrix, None, "Affine transformation matrix")
+
+
+
+
+class RigidVolume(Volume): 
+    pass 
+    # FIXME: redefine Volume, use affine transformation and constrain access to it in the derived class RigidVolume 
