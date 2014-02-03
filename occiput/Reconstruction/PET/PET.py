@@ -85,7 +85,7 @@ DEFAULT_PROJECTION_PARAMETERS  =  {
                          "background_attenuation":   0.0, 
                          "truncate_negative_values": 0,  
                          "gpu_acceleration":         1,      
-                         "direction":                2,      # affects performance only, between 1 and 6; 2 and 5 are normally the best value
+                         "direction":                7,      # affects performance only, between 1 and 6; 2 and 5 are normally the best value
                          "block_size":               512 }   # affects performance only
 
 DEFAULT_BACKPROJECTION_PARAMETERS  =  {
@@ -95,7 +95,7 @@ DEFAULT_BACKPROJECTION_PARAMETERS  =  {
                          "background_attenuation":   0.0, 
                          "truncate_negative_values": 0,  
                          "gpu_acceleration":         1,      
-                         "direction":                1,      # affects performance only, between 1 and 6; 2 and 5 are normally the best value
+                         "direction":                7,      # affects performance only, between 1 and 6; 2 and 5 are normally the best value
                          "block_size":               512 }   # affects performance only
 
 DEFAULT_N_TIME_BINS       = 30
@@ -557,7 +557,10 @@ class PET_Static_Scan():
         return projection_data 
 
     def backproject(self, projection_data, attenuation=None, roi_activity=None, roi_attenuation=None, offsets=None, locations=None, subsets_matrix=None): 
-        projection_data = float32(projection_data)
+        if isinstance(projection_data,ndarray): 
+            projection_data = float32(projection_data)
+        else: 
+            projection_data = float32(projection_data.data)
         if attenuation!=None:
             attenuation = float32(attenuation)
         if attenuation!=None: 
@@ -673,7 +676,7 @@ class PET_Static_Scan():
         return self._normalization
     
     def _update_normalization(self): 
-        self._normalization = self.backproject(ones((1,self.N_locations),dtype=float32)) 
+        self._normalization = self.backproject(ones((1,self.N_locations),dtype=float32,order="F")) 
         self._normalization.data = self._normalization.data + EPS
         self._need_normalization_update = False 
 
@@ -690,10 +693,12 @@ class PET_Static_Scan():
             self._mask = uniform_cylinder(self.activity_shape, self.activity_size, [0.5*self.activity_size[0], 0.5*self.activity_size[1], 0.5*self.activity_size[2]], radius, self.activity_size[2], 2, 1, 0)
         return self._mask
         
-    def estimate_activity(self,iterations = DEFAULT_RECON_ITERATIONS, subset_size = DEFAULT_SUBSET_SIZE, subset_mode='random'): 
+    def estimate_activity(self,iterations = DEFAULT_RECON_ITERATIONS, subset_size = DEFAULT_SUBSET_SIZE, subset_mode='random', epsilon=None): 
+        if epsilon==None: 
+            epsilon=EPS
         progress_bar = ProgressBar() 
         progress_bar.set_percentage(0.1)
-        activity = ones(self.activity_shape,dtype=float32)
+        activity = ones(self.activity_shape,dtype=float32,order="F")
         for i in range(iterations):
             # Subsets: 
             if subset_size==None:
@@ -704,15 +709,13 @@ class PET_Static_Scan():
             if subset_size==None:
                 norm = self.get_normalization()  
             else: 
-                norm = self.backproject(ones((1,self.N_locations),dtype=float32), subsets_matrix=subsets_matrix) 
-            update = (self.backproject( (self._measurement_data+EPS)/(proj+EPS) ,subsets_matrix=subsets_matrix).data+EPS) / (norm.data +EPS) 
-            
-            #FIXME: find out why it crashes without this: 
-            update[where(update>100000)] = 0.1
+                norm = self.backproject(ones((1,self.N_locations),dtype=float32,order="F"), subsets_matrix=subsets_matrix) 
+            update = (self.backproject( (self._measurement_data+epsilon)/(proj+epsilon) ,subsets_matrix=subsets_matrix).data+epsilon) / (norm.data +epsilon) 
+
             activity = activity * update * self.get_mask().data
 
             progress_bar.set_percentage((i+1)*100.0/iterations) 
-            #print "Iteration: %d    max act: %f    min act: %f    max proj: %f    min proj: %f    max norm: %f    min norm: %f"%(i, activity.max(), activity.min(), proj.max(), proj.min(), norm.data.max(), norm.data.min() )
+            print "Iteration: %d    max act: %f    min act: %f    max proj: %f    min proj: %f    max norm: %f    min norm: %f"%(i, activity.max(), activity.min(), proj.max(), proj.min(), norm.data.max(), norm.data.min() )
         progress_bar.set_percentage(100.0)
         return RigidVolume(activity)
             
@@ -729,6 +732,8 @@ class PET_Static_Scan():
         subsets_matrix=subsets_generator.all_active() 
         mask = uniform_cylinder(volume.shape,volume.shape,[0.5*volume.shape[0],0.5*volume.shape[1],0.5*volume.shape[2]], 0.5*min(volume.shape[0]-1,volume.shape[1]),volume.shape[2],2,1,0)
         volume[where(mask.data==0)]=0.0
+        direction=7
+        block_size=512
         proj = PET_project_compressed(volume,None,offsets,locations, subsets_matrix, 
             180, 1, pi/180, 0.0, 256, 256, 256.0, 256.0, 
             256.0, 256.0, 256.0,  
@@ -737,7 +742,7 @@ class PET_Static_Scan():
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
             1, 256, 1.5, 
             0.0, 0.0, 0,
-            2, 512) 
+            direction, block_size) 
         proj[where(proj>proj.max()/scale )]=proj.max()/scale
         return self.uncompress(proj,offsets=offsets,locations=locations,N_u=256,N_v=256) 
 

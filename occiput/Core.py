@@ -153,3 +153,9 @@ class Volume(object):
 class RigidVolume(Volume): 
     pass 
     # FIXME: redefine Volume, use affine transformation and constrain access to it in the derived class RigidVolume 
+
+
+
+
+
+
