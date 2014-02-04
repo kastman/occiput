@@ -49,8 +49,19 @@ import ImageDraw
 from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
 from numpy.random import randint 
 import os
-import svgwrite
-import ipy_table 
+try: 
+    import svgwrite
+    has_sgvwrite = True
+except: 
+    print "Please install svgwrite (e.g. 'easy_install svgwrite') to enable svg visualisations. "
+    has_sgvwrite = False
+try: 
+    import ipy_table 
+    has_ipytable=True
+except: 
+    print "Please install ipy_table (e.g. 'easy_install ipy_table') to enable ipython notebook tables. "
+    has_ipytable=False
+
 
 # Set verbose level
 from occiput.verbose import *
@@ -197,7 +208,9 @@ class ROI():
         s = s+" - theta_z:       %f \n"%self.theta_z
         return s
 
-    def _repr_html_(self):
+    def _repr_html_(self): 
+        if not has_ipytable: 
+            return "Please install ipy_table."
         table_data = [['x',self.x],['y',self.y],['z',self.z],['theta_x',self.theta_x],['theta_y',self.theta_y],['theta_z',self.theta_z]] 
         table = ipy_table.make_table(table_data)
         table = ipy_table.apply_theme('basic_left')
@@ -257,6 +270,8 @@ class Binning():
         return s
 
     def _repr_html_(self):
+        if not has_ipytable: 
+            return "Please install ipy_table."
         table_data = [['N_axial',self.N_axial],['N_azimuthal',self.N_azimuthal],['Angular_step_axial',self.angular_step_axial],
         ['Angular_step_azimuthal',self.angular_step_azimuthal],['Size_u',self.size_u],['Size_v',self.size_v],['N_u',self.N_u],['N_v',self.N_v]] 
         table = ipy_table.make_table(table_data)
@@ -265,7 +280,11 @@ class Binning():
         table = ipy_table.set_global_style(float_format="%3.3f")        
         return table._repr_html_()
         
-    def _make_svg(self):
+    def _make_svg(self): 
+        if not has_svgwrite: 
+            self._svg_string = None
+            return self._svg_string
+
         w = '100%'
         h = '100%'
         
@@ -771,6 +790,8 @@ class PET_Static_Scan():
         return s
 
     def _repr_html_(self):
+        if not has_ipytable: 
+            return "Please install ipy_table."
         table_data = [['Time_start',millisec_to_min_sec(self.time_start)],
         ['Time_end',millisec_to_min_sec(self.time_end)],
         ['Duration',millisec_to_min_sec(self.time_end-self.time_start)],
@@ -1023,7 +1044,9 @@ class PET_Dynamic_Scan():
 #    def _repr_html_(self):
 #        return self.display_sequence()._repr_html_()
 
-    def _repr_html_(self):
+    def _repr_html_(self): 
+        if not has_ipytable: 
+            return "Please install ipy_table."
         table_data = [['N_time_bins',self.N_time_bins],
         ['Time_start',millisec_to_min_sec(self.time_start)],
         ['Time_end',millisec_to_min_sec(self.time_end)],

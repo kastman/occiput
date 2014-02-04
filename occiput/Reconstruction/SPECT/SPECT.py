@@ -5,8 +5,6 @@ from occiput.Visualization import ProgressBar
 from occiput.Core import Volume
 from mMR import UncompressedProjection 
 
-import svgwrite 
-
 from numpy import *
 from numpy.random import randint 
 
@@ -18,6 +16,12 @@ except:
     print "NiftyCore could not be loaded: it will not be possible to reconstruct the PET data. "
     HAVE_NiftyRec = False
 
+try: 
+    import svgwrite
+    has_sgvwrite = True
+except: 
+    print "Please install svgwrite (e.g. 'easy_install svgwrite') to enable svg visualisations. "
+    has_sgvwrite = False
 
 
 DEFAULT_ITERATIONS  = 20
@@ -342,7 +346,11 @@ class SPECT_Static_Scan(object):
     def display_measurement(self): 
         return UncompressedProjection(self._measurement)
 
-    def _make_svg(self):
+    def _make_svg(self): 
+        if not has_svgwrite: 
+            self._svg_string = None 
+            return self._svg_string 
+
         w = '100%'
         h = '100%'
         
@@ -396,6 +404,10 @@ class Gantry():
         self.svg_string = self.make_svg()
 
     def make_svg(self):
+        if not has_svgwrite: 
+            self._svg_string = None 
+            return self._svg_string 
+
         w = '100%'
         h = '100%'
         
