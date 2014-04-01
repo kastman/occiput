@@ -28,4 +28,5 @@ occiput/Transformation/Rigid.py
 occiput/Transformation/__init__.py
 occiput/Visualization/Visualization.py
 occiput/Visualization/__init__.py
+occiput/notebooks/__init__.py
 occiput/test/__init__.py

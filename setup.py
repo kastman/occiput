@@ -17,7 +17,7 @@ setup(
     author_email='stefano.pedemonte@gmail.com',
     packages=['occiput', 
               'occiput.test', 
-              'occiput.notebooks'
+              'occiput.notebooks',
               'occiput.Reconstruction', 
               'occiput.Reconstruction.PET', 
               'occiput.Reconstruction.SPECT', 
