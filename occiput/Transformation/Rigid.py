@@ -11,7 +11,7 @@ from ilang.Models import Model
 from ilang.Graphs import ProbabilisticGraphicalModel 
 from ilang.Samplers import Sampler
 
-from occiput.Core import RigidVolume 
+from occiput.Core import Image3D 
 from occiput.Visualization import MultipleVolumes
 
 from NiftyCore.NiftyReg import resample_image_rigid

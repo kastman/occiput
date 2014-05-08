@@ -10,26 +10,21 @@
 __all__ = ['PET_Static_Scan','PET_Dynamic_Scan','PET_Interface_Petlink32','PET_Interface_mMR','Binning']
 
 
+# Import occiput: 
+from occiput.Core import Image3D
+from occiput.Visualization import *
+from occiput.Visualization.Colors import *
+from occiput.DataSources.Synthetic.Shapes import uniform_cylinder
+from occiput.Visualization import ipy_table, has_ipy_table, svgwrite, has_svgwrite 
+from occiput.Core.NiftyCore_wrap import PET_project_compressed, PET_backproject_compressed, has_NiftyCore
+from occiput.DataSources.FileSources.vNAV import load_vnav_mprage
 
-# Import interfile data handling module 
-from interfile import Interfile
-
-#Import scanner-specific interfaces: 
-from petlink import PET_Interface_Petlink32
-
-try: 
-    from mMR import PET_Interface_mMR 
-    HAVE_mMR = True
-except:
-    HAVE_mMR = False
-
-# Import NiftyCore ray-tracers
-try:
-    from NiftyCore.NiftyRec import PET_project_compressed, PET_backproject_compressed 
-    HAVE_NiftyRec = True
-except: 
-    print "NiftyCore could not be loaded: it will not be possible to reconstruct the PET data. "
-    HAVE_NiftyRec = False
+# Import other modules
+import Image as PIL 
+import ImageDraw
+from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
+from numpy.random import randint 
+import os
 
 # Import ilang (inference language; optimisation) 
 from PET_ilang import PET_Static_Poisson, PET_Dynamic_Poisson, ProbabilisticGraphicalModel
@@ -38,33 +33,20 @@ from ilang.Samplers import Sampler
 # Import DisplayNode to produce ipython notebook visualisations
 from DisplayNode import DisplayNode
 
-# Import occiput: 
-from occiput.Core import Volume, RigidVolume
-from occiput.Visualization import *
-from occiput.DataSources.Synthetic import uniform_cylinder
+# Import interfile data handling module 
+from interfile import Interfile
 
-# Import other modules
-import Image as PIL 
-import ImageDraw
-from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
-from numpy.random import randint 
-import os
+#Import scanner-specific interfaces: 
+from petlink import PET_Interface_Petlink32
 try: 
-    import svgwrite
-    has_sgvwrite = True
-except: 
-    print "Please install svgwrite (e.g. 'easy_install svgwrite') to enable svg visualisations. "
-    has_sgvwrite = False
-try: 
-    import ipy_table 
-    has_ipytable=True
-except: 
-    print "Please install ipy_table (e.g. 'easy_install ipy_table') to enable ipython notebook tables. "
-    has_ipytable=False
+    from mMR import PET_Interface_mMR 
+    HAVE_mMR = True
+except:
+    HAVE_mMR = False
 
 
 # Set verbose level
-from occiput.verbose import *
+from occiput.global_settings import *
 set_verbose_no_printing()
 #set_verbose_high()
 
@@ -209,7 +191,7 @@ class ROI():
         return s
 
     def _repr_html_(self): 
-        if not has_ipytable: 
+        if not has_ipy_table: 
             return "Please install ipy_table."
         table_data = [['x',self.x],['y',self.y],['z',self.z],['theta_x',self.theta_x],['theta_y',self.theta_y],['theta_z',self.theta_z]] 
         table = ipy_table.make_table(table_data)
@@ -270,7 +252,7 @@ class Binning():
         return s
 
     def _repr_html_(self):
-        if not has_ipytable: 
+        if not has_ipy_table: 
             return "Please install ipy_table."
         table_data = [['N_axial',self.N_axial],['N_azimuthal',self.N_azimuthal],['Angular_step_axial',self.angular_step_axial],
         ['Angular_step_azimuthal',self.angular_step_azimuthal],['Size_u',self.size_u],['Size_v',self.size_v],['N_u',self.N_u],['N_v',self.N_v]] 
@@ -610,7 +592,7 @@ class PET_Static_Scan():
             self.backprojection_parameters.gpu_acceleration, self.backprojection_parameters.N_samples, self.backprojection_parameters.sample_step, 
             self.backprojection_parameters.background_activity, self.backprojection_parameters.background_attenuation, 
             self.backprojection_parameters.direction, self.backprojection_parameters.block_size)
-        return RigidVolume(backprojection)
+        return Image3D(backprojection)
       
     def get_measurement(self): 
         return (self._measurement_data,self._locations,self._offsets)
@@ -702,7 +684,7 @@ class PET_Static_Scan():
     def get_gradient(self,activity): 
         proj = self.project(activity)
         norm = self.get_normalization() 
-        return RigidVolume(-norm.data + self.backproject( (self._measurement_data+EPS)/(proj+EPS) ).data)
+        return Image3D(-norm.data + self.backproject( (self._measurement_data+EPS)/(proj+EPS) ).data)
 
     def get_mask(self): 
         if not hasattr(self,"_mask"): 
@@ -734,12 +716,12 @@ class PET_Static_Scan():
             activity = activity * update * self.get_mask().data
 
             progress_bar.set_percentage((i+1)*100.0/iterations) 
-            print "Iteration: %d    max act: %f    min act: %f    max proj: %f    min proj: %f    max norm: %f    min norm: %f"%(i, activity.max(), activity.min(), proj.max(), proj.min(), norm.data.max(), norm.data.min() )
+            #print "Iteration: %d    max act: %f    min act: %f    max proj: %f    min proj: %f    max norm: %f    min norm: %f"%(i, activity.max(), activity.min(), proj.max(), proj.min(), norm.data.max(), norm.data.min() )
         progress_bar.set_percentage(100.0)
-        return RigidVolume(activity)
+        return Image3D(activity)
             
     def volume_render(self,volume,scale=1.0): 
-        # FIXME: make a VolumeRenderer class and use it, the following is a quick fix: 
+        # FIXME: use the VolumeRender object in occiput.Visualization (improve it), the following is a quick fix: 
         R = self.interface.full_sampling(180,1,256,256) 
         offsets   = R['offsets']
         locations = R['locations']
@@ -790,7 +772,7 @@ class PET_Static_Scan():
         return s
 
     def _repr_html_(self):
-        if not has_ipytable: 
+        if not has_ipy_table: 
             return "Please install ipy_table."
         table_data = [['Time_start',millisec_to_min_sec(self.time_start)],
         ['Time_end',millisec_to_min_sec(self.time_end)],
@@ -856,8 +838,22 @@ class PET_Dynamic_Scan():
 #        self.graph.set_nodes_given(['counts','alpha'],True) 
 #        self.graph.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'counts'}) 
 
-    def load_listmode_file(self, hdr_filename, time_bins=None, data_filename=None): 
+    def plot_motion_events(self): 
+        self.__motion_events.plot_mean_displacement()
+ 
+    def plot_motion_parameters(self): 
+        self.__motion_events.plot_motion()
+        
+    def load_listmode_file(self, hdr_filename, time_bins=None, data_filename=None, motion_files_path=None): 
         """Load measurement data from a listmode file. """
+        #Optionally load motion information: 
+        if motion_files_path: 
+            vNAV = load_vnav_mprage(motion_files_path) 
+            self.__motion_events = vNAV 
+            if time_bins!=None: 
+                raise "Either time_bins or motion_files_path should be defined, not both. "
+            time_bins = self.__motion_events.extract_motion_events().sum()   #FIXME: this is not right, implement binning of sinogram according to motion events (this requires modifying the C code that does the binning and passing the right parameters: the list_mode trigger number corresponding to the beginning and end of each sinogram)
+
         print_debug("- Loading dynamic PET data from listmode file "+str(hdr_filename) )
         hdr = Interfile.load(hdr_filename) 
         #Extract information from the listmode header
@@ -1045,7 +1041,7 @@ class PET_Dynamic_Scan():
 #        return self.display_sequence()._repr_html_()
 
     def _repr_html_(self): 
-        if not has_ipytable: 
+        if not has_ipy_table: 
             return "Please install ipy_table."
         table_data = [['N_time_bins',self.N_time_bins],
         ['Time_start',millisec_to_min_sec(self.time_start)],

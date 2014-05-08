@@ -1,27 +1,15 @@
 
 import Scintillators 
 import Collimators 
-from occiput.Visualization import ProgressBar 
-from occiput.Core import Volume
 from mMR import UncompressedProjection 
 
 from numpy import *
 from numpy.random import randint 
 
 # Import NiftyCore ray-tracers
-try:
-    from NiftyCore.NiftyRec import SPECT_project_parallelholes, SPECT_backproject_parallelholes
-    HAVE_NiftyRec = True
-except: 
-    print "NiftyCore could not be loaded: it will not be possible to reconstruct the PET data. "
-    HAVE_NiftyRec = False
-
-try: 
-    import svgwrite
-    has_sgvwrite = True
-except: 
-    print "Please install svgwrite (e.g. 'easy_install svgwrite') to enable svg visualisations. "
-    has_sgvwrite = False
+from occiput.Core.NiftyCore_wrap import SPECT_project_parallelholes, SPECT_backproject_parallelholes, has_NiftyCore
+from occiput.Core import Image3D
+from occiput.Visualization import ProgressBar, svgwrite, has_svgwrite, ipy_table, has_ipy_table
 
 
 DEFAULT_ITERATIONS  = 20
@@ -267,7 +255,7 @@ class SPECT_Static_Scan(object):
         if psf==None: 
             psf=self._psf   
         backproj = SPECT_backproject_parallelholes(projection, cameras, attenuation, psf, self._background_activity, self._background_attenuation, self._use_gpu, self._truncate_negative)
-        return Volume(backproj)
+        return Image3D(backproj)
 
     def scan(self,activity_Bq,scan_time_sec=None): 
         if scan_time_sec==None: 
@@ -320,17 +308,17 @@ class SPECT_Static_Scan(object):
             progress_bar.set_percentage((i+1)*100.0/iterations) 
             #print "Iteration: %d    max act: %f    min act: %f    max proj: %f    min proj: %f    max norm: %f    min norm: %f"%(i, activity.max(), activity.min(), proj.max(), proj.min(), norm.data.max(), norm.data.min() )
         progress_bar.set_percentage(100.0)
-        return Volume(activity)
+        return Image3D(activity)
             
     def volume_render(self,volume,scale=1.0): 
-        # FIXME: make a VolumeRenderer class and use it, the following is a quick fix: 
+        # FIXME: use the VolumeRenderer object in occiput.Visualization (improve it), the following is a quick fix: 
         if isinstance(volume,ndarray): 
             volume = float32(volume)
         else: 
             volume = float32(volume.data)
         proj = self.project(volume).data
         proj[where(proj>proj.max()/scale )]=proj.max()/scale
-        return Volume(proj).display(axis=2)
+        return UncompressedProjection(proj)
 
     def load_measurement_file(self,filename): 
         pass 

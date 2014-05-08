@@ -8,12 +8,16 @@
 import Core
 import Reconstruction
 import Transformation
+import Registration
 import Classification
 import Visualization
 import DataSources
 
+import global_settings
 
-def set_ipython_logo(): 
+
+
+def __set_ipython_logo(): 
     from IPython.display import display, HTML
     display(HTML(data="""
         <style>
@@ -27,14 +31,14 @@ def set_ipython_logo():
     </style>"""))
 
 #alias
-def initialise(): 
-    set_ipython_logo() 
+def initialise_ipython(): 
+    __set_ipython_logo() 
 
 
 
-try: 
-    set_ipython_logo()  
-except: 
-    pass 
+#try: 
+#    __set_ipython_logo()  
+#except: 
+#    pass 
 
 
