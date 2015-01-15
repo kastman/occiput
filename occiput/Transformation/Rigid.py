@@ -14,11 +14,17 @@ from ilang.Samplers import Sampler
 from occiput.Core import Image3D 
 from occiput.Visualization import MultipleVolumes
 
-from NiftyCore.NiftyReg import resample_image_rigid
-from NiftyCore.NiftyReg import deriv_intensity_wrt_space_rigid
-from NiftyCore.NiftyReg import deriv_intensity_wrt_transformation_rigid
-from NiftyCore.NiftyReg import deriv_ssd_wrt_transformation_rigid
-from NiftyCore.NiftyReg import gaussian_smoothing
+try: 
+    from NiftyCore.NiftyReg import resample_image_rigid
+    from NiftyCore.NiftyReg import deriv_intensity_wrt_space_rigid
+    from NiftyCore.NiftyReg import deriv_intensity_wrt_transformation_rigid
+    from NiftyCore.NiftyReg import deriv_ssd_wrt_transformation_rigid
+    from NiftyCore.NiftyReg import gaussian_smoothing
+except: 
+    has_niftycore = False
+    print "Please install NiftyCore"
+else: 
+    has_niftycore = True 
 
 import numpy
 

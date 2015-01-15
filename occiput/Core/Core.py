@@ -87,7 +87,7 @@ class Transform_Affine(object):
 
     def is_6DOF(self):
         #tra, rot, axis = self.to_translation_rotation() 
-        #if tra==None: 
+        #if tra is None: 
         #    return False
         #mat = numpy.dot(tr.translation_matrix(tra), tr.rotation_matrix(rot,axis)) 
         #return tr.is_same_transform(mat,self.data)
@@ -96,7 +96,7 @@ class Transform_Affine(object):
     # FIXME: implement the following functions (see is_6DOF() )
     def is_9DOF(self): 
         tra, scale, rot, rot_axis = self.to_translation_scale_rotation()
-        if tra==None: 
+        if tra is None: 
             return False   
         tra_mat = tr.translation_matrix(tra)
         scale_mat = numpy.diag([scale[0],scale[1],scale[2],1.0])
@@ -181,7 +181,7 @@ class Transform_Affine(object):
     
     def set_data(self,data): 
         if not isinstance(data, numpy.ndarray): 
-            if data == None: 
+            if data  is None: 
                 data = numpy.eye(4)
             else:
                 # FIXME: raise exception
@@ -303,22 +303,22 @@ class GridND(object):
         self.__is_axis_aligned = is_axis_aligned 
 
     def min(self): 
-        if self.__min == None: 
+        if self.__min  is None: 
             self.__min = eval('self.data%s'%('.min(0)'*self.ndim))
         return self.__min
 
     def max(self): 
-        if self.__max == None:
+        if self.__max  is None:
             self.__max = eval('self.data%s'%('.max(0)'*self.ndim))
         return self.__max 
 
     def span(self): 
-        if self.__span == None:
+        if self.__span  is None:
             self.__span = self.max() - self.min() 
         return self.__span 
 
     def center(self,use_corners_only=True): 
-        if self.__center == None or (self.__use_corners_only != use_corners_only): 
+        if self.__center  is None or (self.__use_corners_only != use_corners_only): 
             if use_corners_only: 
                 corners = self.corners()
                 center = corners.mean(1)
@@ -340,7 +340,7 @@ class GridND(object):
         return dist 
 
     def mean_dist_from_center(self): 
-        if self.__mean_dist_center == None: 
+        if self.__mean_dist_center  is None: 
             center = self.center() 
             self.__mean_dist_center = self.mean_distance_from_point(center) 
         return self.__mean_dist_center
@@ -365,7 +365,7 @@ class GridND(object):
         return transform_grid(self, affine_from_grid )
 
     def corners(self, homogeneous_coords=False): 
-        if self.__corners == None: 
+        if self.__corners  is None: 
             n_corners = 2**self.ndim 
             corners = []
             for i in range(n_corners): 
@@ -387,7 +387,7 @@ class GridND(object):
     
     def __set_data(self,data): 
         self.__data = data
-        if data != None: 
+        if data is not None: 
             self.ndim = self.data.ndim-1 
         else: 
             self.ndim = None
@@ -525,7 +525,7 @@ class ImageND(object):
             self.affine = affine
         elif isinstance(affine,numpy.ndarray): 
             self.affine = Transform_Affine(data=affine)
-        elif affine==None: 
+        elif affine is None: 
             self.affine = Transform_Identity()  
         else: 
             print "'affine' must be an instance of Affine"
@@ -540,7 +540,7 @@ class ImageND(object):
         return self.data.shape 
 
     def get_world_grid(self, n_points=None): 
-        if n_points == None: 
+        if n_points  is None: 
             n_points = self.get_shape() 
         grid = grid_from_box_and_affine(self.get_world_grid_min(), self.get_world_grid_max(), n_points) 
         return grid
@@ -636,7 +636,7 @@ class Image3D(ImageND):
         pass 
 
     def has_data(self): 
-        return self.data!=None
+        return self.data is not None
 
     def min(self): 
         return self.data.min()
@@ -648,21 +648,21 @@ class Image3D(ImageND):
         D = self.display(axis) 
         D.display_in_browser() 
 
-    def display(self, axis=0, open_browser=False): 
+    def display(self, axis=0, shrink=256,rotate=90,subsample_slices=None,scales=None,open_browser=False): 
         # The following is a quick fix: use MultipleVolumesNiftyCore if the image has small size, 
         # MultipleVolumes otherwise. MultipleVolumesNiftyCore makes use of the GPU but crashes with large images. 
         # NOTE that MultipleVolumes produces a different visualisation from MultipleVolumesNiftyCore: 
         # it displays the raw imaging data, without accounting for the transformation to world space. 
         # Modify MultipleVolumesNiftyCore so that it processes the data in sequence if it is too large for the GPU. 
         # Then get rid of  MultipleVolumes. 
-        if self.size <= 256**3: 
-            D = MultipleVolumesNiftyCore([self],axis,open_browser=open_browser) 
-        else: 
-            D = MultipleVolumes([self],axis,open_browser=open_browser)
+#        if self.size <= 256**3: 
+#            D = MultipleVolumesNiftyCore([self,],axis=axis,shrink=shrink,rotate=rotate,subsample_slices=subsample_slices,scales=scales,open_browser=open_browser) 
+#        else: 
+        D = MultipleVolumes([self,],axis=axis,shrink=shrink,rotate=rotate,subsample_slices=subsample_slices,scales=scales,open_browser=open_browser)
         return D 
 
     def display_slice(self,axis=0,index=None,open_browser=False): 
-        if index==None: 
+        if index is None: 
             if axis==0: 
                 index = numpy.uint32(self.shape[0]/2)
             if axis==1: 

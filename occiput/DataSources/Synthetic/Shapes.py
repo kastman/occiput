@@ -12,21 +12,37 @@
 
 
 from occiput.Core import Image3D as __Image3D
-from NiftyCore.NiftyRec import ET_spherical_phantom as __ET_spherical_phantom
-from NiftyCore.NiftyRec import ET_cylindrical_phantom as __ET_cylindrical_phantom
-from NiftyCore.NiftyRec import ET_spheres_ring_phantom as __ET_spheres_ring_phantom
+try: 
+    from NiftyCore.NiftyRec import ET_spherical_phantom as __ET_spherical_phantom
+    from NiftyCore.NiftyRec import ET_cylindrical_phantom as __ET_cylindrical_phantom
+    from NiftyCore.NiftyRec import ET_spheres_ring_phantom as __ET_spheres_ring_phantom
+except: 
+    has_niftycore = False
+    print "Please install NiftyCore"
+else: 
+    has_niftycore = True
 
+class InstallationError(Exception):
+    def __init__(self, message):
+        Exception.__init__(self, message)
 
+        
 
 def uniform_sphere(voxels=[256,256,256],size=[1,1,1],center=[0.5,0.5,0.5],radius=0.2,inner_value=1.0,outer_value=0.0): 
     """Create volume (3D numpy array) with uniform value within a spherical region. """
+    if not has_niftycore: 
+        raise InstallationError("Please install NiftyCore to enable function uniform_sphere(..)")
     return __Image3D(__ET_spherical_phantom(voxels,size,center,radius,inner_value,outer_value)) 
 
 def uniform_cylinder(voxels=[256,256,256],size=[1,1,1],center=[0.5,0.5,0.5],radius=0.3,length=0.7,axis=1,inner_value=1.0,outer_value=0.0): 
     """Create volume (3D numpy array) with uniform value within a spherical region. """
+    if not has_niftycore: 
+        raise InstallationError("Please install NiftyCore to enable function uniform_cylinder(..)")
     return __Image3D(__ET_cylindrical_phantom(voxels,size,center,radius,length,axis,inner_value,outer_value)) 
     
 def uniform_spheres_ring(voxels=[256,256,256],size=[1,1,1],center=[0.5,0.5,0.5],ring_radius=0.2,min_sphere_radius=0.01,max_sphere_radius=0.1,N_spheres=6,inner_value=1.0,outer_value=0.0,taper=0,axis=0): 
     """Create volume (3D numpy array) with uniform value within a spherical region. """
+    if not has_niftycore: 
+        raise InstallationError("Please install NiftyCore to enable function uniform_spheres_ring(..)")
     return __Image3D(__ET_spheres_ring_phantom(voxels,size,center,ring_radius,min_sphere_radius,max_sphere_radius,N_spheres,inner_value,outer_value,taper,axis))
 

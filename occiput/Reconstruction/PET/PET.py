@@ -20,9 +20,9 @@ from occiput.Core.NiftyCore_wrap import PET_project_compressed, PET_backproject_
 from occiput.DataSources.FileSources.vNAV import load_vnav_mprage
 
 # Import other modules
-import Image as PIL 
+from PIL import Image as PIL 
 import ImageDraw
-from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
+from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf, asarray
 from numpy.random import randint 
 import os
 
@@ -155,7 +155,7 @@ def print_percentage(number):
 class ROI(): 
     """Region of Interest. """
     def __init__(self,parameters=None): 
-        if parameters==None: 
+        if parameters is None: 
             self.load_from_dictionary(DEFAULT_ROI)  
         elif type(parameters) == dict:  
             self.load_from_dictionary(parameters)        
@@ -210,7 +210,7 @@ class Binning():
     def __init__(self,parameters=None): 
         self._initialised = 0
         self.name = "Unknown binning name"
-        if parameters==None: 
+        if parameters is None: 
             self.load_from_dictionary(DEFAULT_BINNING)  
         elif type(parameters) == dict:  
             self.load_from_dictionary(parameters)        
@@ -306,7 +306,7 @@ class ProjectionParameters():
     def __init__(self,parameters=None): 
         self._initialised = 0
         self.name = "Unknown binning name"
-        if parameters==None: 
+        if parameters is None: 
             self.load_from_dictionary(self.default_parameters)  
         elif type(parameters) == dict:  
             self.load_from_dictionary(parameters)        
@@ -409,7 +409,7 @@ class PET_Static_Scan():
         self.enable_gpu_acceleration()                          # change to self.disable_gpu_acceleration() to disable by default      
 
         self._construct_ilang_model() 
-        self._display_node = DisplayNode() 
+        #self._display_node = DisplayNode() 
         
         self._normalization             = None                  # Normalization volume 
         self._need_normalization_update = True                  # If True, the normalization volume needs to be recomputed 
@@ -425,7 +425,61 @@ class PET_Static_Scan():
         self.graph.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'z'}) 
         # construct a basic sampler object
         self.sampler     = Sampler(self.graph)
- 
+
+    def save_sinogram_to_file(self,filename='sinogram.h5'):
+        import h5py
+        h5f = h5py.File(filename, 'w')
+        static_data,locations,offsets = self.get_measurement() 
+        h5f.create_dataset('offsets', data=offsets)
+        h5f.create_dataset('locations', data=locations)
+        h5f.create_dataset('static_data', data=static_data)
+        
+        h5f.create_dataset('n_axial', data=self.binning.N_axial)
+        h5f.create_dataset('n_azimuthal', data=self.binning.N_azimuthal)
+        h5f.create_dataset('angular_step_axial', data=self.binning.angular_step_axial)
+        h5f.create_dataset('angular_step_azimuthal', data=self.binning.angular_step_azimuthal)
+        h5f.create_dataset('size_u', data=self.binning.size_u)
+        h5f.create_dataset('size_v', data=self.binning.size_v)
+        h5f.create_dataset('n_u', data=self.binning.N_u)
+        h5f.create_dataset('n_v', data=self.binning.N_v)
+        h5f.create_dataset('N_counts', data=self.N_counts)
+        h5f.create_dataset('N_locations', data=self.N_locations)
+        h5f.create_dataset('compression_ratio', data=self.compression_ratio)
+        h5f.create_dataset('listmode_loss', data=self.listmode_loss)
+        h5f.create_dataset('N_time_bins', data=self.N_time_bins)
+        h5f.create_dataset('time_end', data=self.time_end)
+        h5f.create_dataset('time_start', data=self.time_start)
+        h5f.close()
+
+    def load_sinogram_from_file(self,filename): 
+        import h5py 
+        h5f = h5py.File(filename,'r') 
+        offsets     = asarray( h5f['offsets'] )
+        locations   = asarray( h5f['locations'] )
+        static_data = asarray( h5f['static_data'] )
+        self._measurement_data = static_data
+        self._locations        = locations
+        self._offsets          = offsets
+
+        binning = Binning({'n_axial':                int32(   h5f['n_axial'] ), 
+                           'n_azimuthal':            int32(   h5f['n_azimuthal'] ), 
+                           'angular_step_axial':     float32( h5f['angular_step_axial'] ), 
+                           'angular_step_azimuthal': float32( h5f['angular_step_azimuthal'] ), 
+                           'size_u':                 float32( h5f['size_u'] ), 
+                           'size_v':                 float32( h5f['size_v'] ),
+                           'n_u':                    int32(   h5f['n_u'] ),
+                           'n_v':                    int32(   h5f['n_v'] ) })
+        self.set_binning(binning)
+        self.N_counts =          int32(   h5f['N_counts'] )
+        self.N_locations =       int32(   h5f['N_locations'] )
+        self.compression_ratio = float32( h5f['compression_ratio'] )
+        self.listmode_loss =     float32( h5f['listmode_loss'] )
+        self.N_time_bins =       int32(   h5f['N_time_bins'] )
+        self.time_start =        float32( h5f['time_start'] )
+        self.time_end =          float32( h5f['time_end'] )
+        
+        h5f.close() 
+
     def set_binning(self, binning): 
         if isinstance(binning,Binning): 
             self.binning = binning
@@ -454,7 +508,7 @@ class PET_Static_Scan():
         
         # 2) Guess the path of the listmode data file, if not specified or mis-specified; 
         #  1 - see if the specified listmode data file exists 
-        if data_filename!=None: 
+        if data_filename is not None: 
             data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)          # cross platform compatibility 
             if not os.path.exists(data_filename): 
                 raise FileNotFound("listmode data",data_filename)  
@@ -519,28 +573,28 @@ class PET_Static_Scan():
             activity = float32(activity)
         else: 
             activity = float32(activity.data)
-        if attenuation!=None:
+        if attenuation is not None:
             if isinstance(attenuation,ndarray):
                 attenuation = float32(attenuation)
             else: 
                 attenuation = float32(attenuation.data)
         if not list(activity.shape) == list(self.activity_shape): 
             raise UnexpectedParameter("Activity must have the same shape as self.activity_shape")
-        if attenuation!=None: 
+        if attenuation is not None: 
             if not list(attenuation.shape) == list(self.attenuation_shape): 
                 raise UnexpectedParameter("Attenuation must have the same shape as self.attenuation_shape")
-        if offsets==None: 
+        if offsets is None: 
             offsets=self._offsets
-        if locations==None:
+        if locations is None:
             locations=self._locations
         # By default, the center of the imaging volume is at the center of the scanner 
-        if roi_activity == None: 
+        if roi_activity  is None: 
             roi_activity = ROI((0.5*self.activity_size[0],0.5*self.activity_size[1],0.5*self.activity_size[2],0,0,0))
         # By default, the center of the imaging volume is at the center of the scanner 
-        if roi_attenuation == None: 
+        if roi_attenuation  is None: 
             roi_attenuation = ROI((0.5*self.attenuation_size[0],0.5*self.attenuation_size[1],0.5*self.attenuation_size[2],0,0,0))    
         # Handle no subsets
-        if subsets_matrix==None: 
+        if subsets_matrix is None: 
             subsets_matrix=self._subsets_generator.all_active()    
         # Pass on to the C library all the parameters required for projection 
         projection_data = PET_project_compressed(activity,attenuation,offsets,locations, subsets_matrix, 
@@ -562,23 +616,23 @@ class PET_Static_Scan():
             projection_data = float32(projection_data)
         else: 
             projection_data = float32(projection_data.data)
-        if attenuation!=None:
+        if attenuation is not None:
             attenuation = float32(attenuation)
-        if attenuation!=None: 
+        if attenuation is not None: 
             if not list(attenuation.shape) == list(self.attenuation_shape): 
                 raise UnexpectedParameter("Activity must have the same shape as self.attenuation_shape")
         # By default, the center of the imaging volume is at the center of the scanner 
-        if roi_activity == None: 
+        if roi_activity  is None: 
             roi_activity = ROI((0.5*self.activity_size[0],0.5*self.activity_size[1],0.5*self.activity_size[2],0,0,0))
         # By default, the center of the imaging volume is at the center of the scanner 
-        if roi_attenuation == None: 
+        if roi_attenuation  is None: 
             roi_attenuation = ROI((0.5*self.attenuation_size[0],0.5*self.attenuation_size[1],0.5*self.attenuation_size[2],0,0,0))  
-        if offsets==None: 
+        if offsets is None: 
             offsets=self._offsets
-        if locations==None:
+        if locations is None:
             locations=self._locations   
         # Handle no subsets
-        if subsets_matrix==None: 
+        if subsets_matrix is None: 
             subsets_matrix=self._subsets_generator.all_active()
         # Pass on to the C library all the parameters required for back-projection 
         backprojection = PET_backproject_compressed(projection_data,attenuation,offsets,locations, subsets_matrix, 
@@ -605,13 +659,13 @@ class PET_Static_Scan():
         self._measurement_data = measurement_data 
 
     def uncompress(self, projection_data, offsets=None, locations=None, N_u=None, N_v=None):
-        if offsets==None: 
+        if offsets is None: 
             offsets=self._offsets
-        if locations==None:
+        if locations is None:
             locations=self._locations 
-        if N_u==None:
+        if N_u is None:
             N_u=self.binning.N_u
-        if N_v==None:
+        if N_v is None:
             N_v=self.binning.N_v
         return self.interface.uncompress(offsets, projection_data, locations, N_u, N_v)
 
@@ -624,7 +678,7 @@ class PET_Static_Scan():
         self.backprojection_parameters.gpu_acceleration = 0 
 
     def load_static_measurement(self, time_bin=None): 
-        if time_bin == None: 
+        if time_bin  is None: 
             R = self.interface.get_measurement_static() 
         else: 
             R = self.interface.get_measurement(time_bin) 
@@ -650,9 +704,9 @@ class PET_Static_Scan():
 #        # (if emission data has been loaded, then the instance of the object of this class has a 'graph' attribute)
 #        if method == 'MLEM': 
 #           # initialise the ilang variables 
-#            if self.graph.get_node_value('lambda') == None: 
+#            if self.graph.get_node_value('lambda')  is None: 
 #                self.graph.set_node_value('lambda',ones((Nx,Ny,Nz),dtype=float32)) 
-#            if self.graph.get_node_value('alpha') == None: 
+#            if self.graph.get_node_value('alpha')  is None: 
 #                self.graph.set_node_value('alpha',zeros((Nx,Ny,Nz),dtype=float32)) 
 #            # reconstruct
 #            self.sampler.set_node_sampling_method_manual('lambda','ExpectationMaximization')
@@ -670,7 +724,7 @@ class PET_Static_Scan():
         # FIXME: how about the roi ? 
 
     def get_normalization(self): 
-        if self._normalization == None: 
+        if self._normalization  is None: 
            self._update_normalization() 
         elif self._need_normalization_update: 
            self._update_normalization()
@@ -695,19 +749,19 @@ class PET_Static_Scan():
         return self._mask
         
     def estimate_activity(self,iterations = DEFAULT_RECON_ITERATIONS, subset_size = DEFAULT_SUBSET_SIZE, subset_mode='random', epsilon=None): 
-        if epsilon==None: 
+        if epsilon is None: 
             epsilon=EPS
         progress_bar = ProgressBar() 
         progress_bar.set_percentage(0.1)
         activity = ones(self.activity_shape,dtype=float32,order="F")
         for i in range(iterations):
             # Subsets: 
-            if subset_size==None:
+            if subset_size is None:
                 subsets_matrix=None
             else: 
                 subsets_matrix = self._subsets_generator.new_subset(subset_mode,subset_size)
             proj = self.project(activity,subsets_matrix=subsets_matrix)
-            if subset_size==None:
+            if subset_size is None:
                 norm = self.get_normalization()  
             else: 
                 norm = self.backproject(ones((1,self.N_locations),dtype=float32,order="F"), subsets_matrix=subsets_matrix) 
@@ -850,7 +904,7 @@ class PET_Dynamic_Scan():
         if motion_files_path: 
             vNAV = load_vnav_mprage(motion_files_path) 
             self.__motion_events = vNAV 
-            if time_bins!=None: 
+            if time_bins is not None: 
                 raise "Either time_bins or motion_files_path should be defined, not both. "
             time_bins = self.__motion_events.extract_motion_events().sum()   #FIXME: this is not right, implement binning of sinogram according to motion events (this requires modifying the C code that does the binning and passing the right parameters: the list_mode trigger number corresponding to the beginning and end of each sinogram)
 
@@ -870,7 +924,7 @@ class PET_Dynamic_Scan():
 
         # 2) Guess the path of the listmode data file, if not specified or mis-specified; 
         #  1 - see if the specified listmode data file exists 
-        if data_filename!=None: 
+        if data_filename is not None: 
             data_filename = data_filename.replace("/",os.path.sep).replace("\\",os.path.sep)          # cross platform compatibility 
             if not os.path.exists(data_filename): 
                 raise FileNotFound("listmode data",data_filename)  
@@ -894,7 +948,7 @@ class PET_Dynamic_Scan():
            
         # 3) Determine acquisition settings
         n_packets              = hdr['total listmode word counts']['value'] 
-        scan_duration          = hdr['image duration']['value']*1000            # now milliseconds
+        scan_duration          = hdr['image duration']['value']*1000            # milliseconds
         
         # 4) determine scanner parameters
         n_radial_bins          = hdr['number of projections']['value'] 
@@ -904,18 +958,23 @@ class PET_Dynamic_Scan():
         n_sinograms            = n_rings+2*n_rings*max_ring_diff-max_ring_diff**2-max_ring_diff
 
         # Determine the time binning pattern 
-        if time_bins == None: 
+        if time_bins  is None: 
             time_bins = int32(linspace(0,scan_duration,DEFAULT_N_TIME_BINS+1))
         elif isscalar(time_bins):    #time_bins in this case indicates the number of time bins
             time_bins = int32(linspace(0,scan_duration,time_bins+1)) 
 
         # Display information 
-        print_debug(" - Number of packets:   %d      "%n_packets )
-        print_debug(" - Scan duration:       %d [sec]"%scan_duration )
-        print_debug(" - Listmode data file:  %s      "%data_filename )
-        print_debug(" - Number of time bins: %d      "%(len(time_bins)-1) )
-        print_debug(" - Time start:          %f [sec]"%(time_bins[ 0]/1000.0) )
-        print_debug(" - Time end:            %f [sec]"%(time_bins[-1]/1000.0) )
+        print_debug(" - Number of packets:    %d       "%n_packets )
+        print_debug(" - Scan duration:        %d [sec] "%(scan_duration/1000.0) )
+        print_debug(" - Listmode data file:   %s       "%data_filename )
+        print_debug(" - Listmode header file: %s       "%hdr_filename)
+        print_debug(" - Number of time bins:  %d       "%(len(time_bins)-1) )
+        print_debug(" - Time start:           %f [sec] "%(time_bins[ 0]/1000.0) )
+        print_debug(" - Time end:             %f [sec] "%(time_bins[-1]/1000.0) )
+        print_debug(" - time_bins:            %s       "%str(time_bins))
+        print_debug(" - n_radial_bins:        %d       "%n_radial_bins)
+        print_debug(" - n_angles:             %d       "%n_angles)
+        print_debug(" - n_angles:             %d       "%n_sinograms)
 
         progress_bar = ProgressBar()
         
@@ -980,16 +1039,88 @@ class PET_Dynamic_Scan():
         return uncompressed_measurement 
                
     def uncompress(self, projection_data, offsets=None, locations=None, N_u=None, N_v=None): 
-        if offsets==None:
+        if offsets is None:
             offsets=self._offsets
-        if locations==None:
+        if locations is None:
             locations=self._locations
-        if N_u==None:
+        if N_u is None:
             N_u=self.binning.N_u
-        if N_v==None:
+        if N_v is None:
             N_v=self.binning.N_v
         return self.interface.uncompress(offsets, projection_data, locations, N_u, N_v) 
-               
+         
+    def save_sinogram_to_file(self,filename='sinogram.h5'):
+        import h5py
+        h5f = h5py.File(filename, 'w')
+        data,locations,offsets = self.get_static_measurement() 
+        h5f.create_dataset('offsets', data=offsets)
+        h5f.create_dataset('locations', data=locations)
+        h5f.create_dataset('static_data', data=data)
+        
+        h5f.create_dataset('n_axial', data=self.binning.N_axial)
+        h5f.create_dataset('n_azimuthal', data=self.binning.N_azimuthal)
+        h5f.create_dataset('angular_step_axial', data=self.binning.angular_step_axial)
+        h5f.create_dataset('angular_step_azimuthal', data=self.binning.angular_step_azimuthal)
+        h5f.create_dataset('size_u', data=self.binning.size_u)
+        h5f.create_dataset('size_v', data=self.binning.size_v)
+        h5f.create_dataset('n_u', data=self.binning.N_u)
+        h5f.create_dataset('n_v', data=self.binning.N_v)
+        h5f.create_dataset('N_counts', data=self.N_counts)
+        h5f.create_dataset('N_locations', data=self.N_locations)
+        h5f.create_dataset('compression_ratio', data=self.compression_ratio)
+        h5f.create_dataset('listmode_loss', data=self.listmode_loss)
+        h5f.create_dataset('N_time_bins', data=self.N_time_bins)
+        h5f.create_dataset('time_end', data=self.time_end)
+        h5f.create_dataset('time_start', data=self.time_start)
+        h5f.close()
+
+    def load_sinogram_from_file(self,filename): 
+        import h5py 
+        h5f = h5py.File(filename,'r') 
+        offsets     = asarray( h5f['offsets'] )
+        locations   = asarray( h5f['locations'] )
+        static_data = asarray( h5f['static_data'] )
+        self._static_measurement_data = static_data
+        self._locations        = locations
+        self._offsets          = offsets
+
+        binning = Binning({'n_axial':                int32( h5f['n_axial'] ), 
+                           'n_azimuthal':            int32( h5f['n_azimuthal'] ), 
+                           'angular_step_axial':     float32( h5f['angular_step_axial'] ), 
+                           'angular_step_azimuthal': float32( h5f['angular_step_azimuthal'] ), 
+                           'size_u':                 float32( h5f['size_u'] ), 
+                           'size_v':                 float32( h5f['size_v'] ),
+                           'n_u':                    int32( h5f['n_u'] ),
+                           'n_v':                    int32( h5f['n_v'] ) })
+        self.set_binning(binning)
+        self.N_counts =          int32( h5f['N_counts'] )
+        self.N_locations =       int32( h5f['N_locations'] )
+        self.compression_ratio = float32( h5f['compression_ratio'] )
+        self.listmode_loss =     float32( h5f['listmode_loss'] )
+        self.N_time_bins =       int32( h5f['N_time_bins'] )
+        self.time_start =        float32( h5f['time_start'] )
+        self.time_end =          float32( h5f['time_end'] )
+
+        h5f.close() 
+
+        # FIXME: design flaws: 1-self.static is redundant (e.g. self.binning,self.static.binning); 2-no need to set interface when loading sinogram data
+        # However now the interface is necessary in order to uncompress the measurement 
+        self.static = PET_Static_Scan()
+        self.static.set_interface(self.interface) 
+        self.static.set_binning(self.binning) 
+        #self.static.scanner_detected = self.scanner_detected 
+        self.static.set_binning(binning)
+        self.static.N_counts = self.N_counts
+        self.static.N_locations = self.N_locations
+        self.static.compression_ratio = self.compression_ratio
+        self.static.listmode_loss = self.listmode_loss
+        self.static.N_time_bins = 1
+        self.static.time_start = self.time_start
+        self.static.time_end = self.time_end
+        self.static._measurement_data = self._static_measurement_data
+        self.static._locations        = self._locations
+        self.static._offsets          = self._offsets
+
     def display_measurements_in_browser(self,scale=None): 
         return self.display_sequence(scale=scale,open_browser=True) 
         
@@ -1020,12 +1151,12 @@ class PET_Dynamic_Scan():
         s = s+" - dynamic_inflation:            %d \n"%self.dynamic_inflation
         s = s+" - listmode_loss:                %d \n"%self.listmode_loss
         s = s+" - Mean time bin duration:       %d [sec] \n"%0 #FIXME 
-        if self.interface != None: 
+        if self.interface  is not None: 
             s = s+" * Interface: \n" 
             s = s+"     - Name:                     %s \n"%self.interface.name 
             s = s+"     - Manufacturer:             %s \n"%self.interface.manufacturer 
             s = s+"     - Version:                  %s \n"%self.interface.version 
-        if self.binning != None:
+        if self.binning  is not None:
             s = s+" * Binning: \n" 
             s = s+"     - N_axial bins:             %d \n"%self.binning.N_axial 
             s = s+"     - N_azimuthal bins:         %d \n"%self.binning.N_azimuthal 

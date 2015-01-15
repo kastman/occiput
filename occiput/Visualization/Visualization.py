@@ -1,6 +1,12 @@
 
+# occiput 
+# Stefano Pedemonte 
+# April 2014 
+# Harvard University, Martinos Center for Biomedical Imaging 
+# Boston, MA, USA 
 
-import Image
+
+from PIL import Image
 import numpy
 import uuid
 
@@ -10,9 +16,19 @@ from DisplayNode import DisplayNode
 from . import Colors as C
 from IPython.display import HTML, Javascript, display
 
-    
+
+
+class InstallationError(Exception):
+    def __init__(self, message):
+        Exception.__init__(self, message)
+
+
+
+
+
 class ProgressBar(): 
     def __init__(self, height='6px', width='100%%', background_color=C.LIGHT_BLUE, foreground_color=C.BLUE): 
+        self._percentage = 0.0
         self.divid = str(uuid.uuid4())
         self.pb = HTML(
         """
@@ -28,11 +44,16 @@ class ProgressBar():
     def set_percentage(self,percentage):
         if not self.visible: 
             self.show()
-        if percentage < 1:
-            percentage = 1
-        if percentage > 100:
-            percentage = 100 
+        if percentage < 0.0:
+            percentage = 0.0
+        if percentage > 100.0:
+            percentage = 100.0 
+        percentage = int(percentage)
+        self._percentage = percentage
         display(Javascript("$('div#%s').width('%i%%')" % (self.divid, percentage)))
+    
+    def get_percentage(self):
+        return self._percentage
 
 
 
@@ -78,12 +99,12 @@ class MultipleVolumes():
         if m>=0: 
             if normalise: 
                 if not global_scale: 
-                    if scale==None:
+                    if scale is None:
                         a = a * 255/(a.max()+1e-9) 
                     else: 
                         a = a * scale *255/(a.max()+1e-9) 
                 else: 
-                    if scale==None:
+                    if scale is None:
                         a = a * 255/(M+1e-9) 
                     else: 
                         a = a * scale *255/(M+1e-9) 
@@ -91,12 +112,12 @@ class MultipleVolumes():
         else:
             if normalise: 
                 if not global_scale:
-                    if scale==None:
+                    if scale is None:
                         a = a * 512/(a.max()-a.min()+1e-9) 
                     else: 
                         a = a * scale * 512/(a.max()-a.min()+1e-9) 
                 else: 
-                    if scale==None:
+                    if scale is None:
                         a = a * 512/(M-m+1e-9) 
                     else: 
                         a = a * scale * 512/(M-m+1e-9)                     
@@ -111,7 +132,7 @@ class MultipleVolumes():
             rgb[:,:,1]=green
             rgb[:,:,2]=blue
             im = Image.fromarray(rgb,mode='RGB')
-        if shrink != None: 
+        if shrink  is not None: 
             # scale in order to make the largest dimension equal to 'shrink' 
             shrink = int(shrink) 
             (h,w) = im.size
@@ -131,21 +152,21 @@ class MultipleVolumes():
         self.display(axis,shrink,rotate,subsample_slices,scales,open_browser=True)
 
     def display(self,axis=None,shrink=None,rotate=None,subsample_slices=None,scales=None,open_browser=None):
-        if axis==None:
+        if axis is None:
             axis = self._axis
-        if shrink == None:
+        if shrink  is None:
             shrink = self._shrink
-        if rotate == None: 
+        if rotate  is None: 
             rotate = self._rotate
-        if  subsample_slices == None: 
+        if  subsample_slices  is None: 
             subsample_slices = self._subsample_slices
-        if subsample_slices==None: 
+        if subsample_slices is None: 
             subsample_slices=1
-        if scales == None: 
+        if scales  is None: 
             scales = self._scales 
-        if open_browser == None: 
+        if open_browser  is None: 
             open_browser = self._open_browser
-        if open_browser == None: 
+        if open_browser  is None: 
             open_browser = False 
         D = DisplayNode()
         images = []
@@ -157,7 +178,7 @@ class MultipleVolumes():
         self._progress_bar = ProgressBar(height='6px', width='100%%', background_color=C.LIGHT_GRAY, foreground_color=C.GRAY)
         
         for j in range(len(self.volumes)): 
-            if scales == None: 
+            if scales  is None: 
                 scale = 255/(self.get_data(j).max()+1e-9)
             else: 
                 scale = scales[j]*255/(self.get_data(j).max()+1e-9)
@@ -205,11 +226,11 @@ class MultipleVolumesNiftyCore():
         self.display(axis,max_size,open_browser=True)
 
     def display(self,axis=None, max_size=256, open_browser=None):
-        if axis==None:
+        if axis is None:
             axis = self._axis
-        if open_browser == None: 
+        if open_browser  is None: 
             open_browser = self._open_browser
-        if open_browser == None: 
+        if open_browser  is None: 
             open_browser = False 
         D = DisplayNode() 
         
@@ -249,7 +270,7 @@ class MultipleVolumesNiftyCore():
             return D.display('tipix', images, open_browser)   
 
     def __array_to_im(self, a, lookup_table): 
-        if lookup_table != None: 
+        if lookup_table  is not None: 
             red,green,blue,alpha = lookup_table.convert_ndarray_to_rgba(a)
             rgb = numpy.zeros((a.shape[0],a.shape[1],3),dtype=numpy.uint8)
             rgb[:,:,0]=red
@@ -277,9 +298,24 @@ def rad_to_deg(rad):
     return rad*180.0/numpy.pi
 
 
-from NiftyCore.NiftyRec import SPECT_project_parallelholes as projection
-from mMR import UncompressedProjection 
-#FIXME: make it part of occiput Core 
+
+
+try: 
+    from NiftyCore.NiftyRec import SPECT_project_parallelholes as projection
+except: 
+    has_niftycore = False
+    print "Please install NiftyCore"
+else: 
+    has_niftycore = True
+try: 
+    from mMR import UncompressedProjection 
+    #FIXME: make it part of occiput Core 
+except: 
+    has_mMR = False
+    print "Please install mMR to enable compatibility with Siemens Biograph mMR scanner. "
+else: 
+    has_mMR = True
+
 
 
 class VolumeRenderer(): 
@@ -305,7 +341,7 @@ class VolumeRenderer():
         if hasattr(self.volume,'compute_resample_on_grid'):   #i.e. if it is a Image3 
             volume = self.volume.copy()
             # make grid of regularly-spaced points
-            if max_n_points==None: 
+            if max_n_points is None: 
                 max_n_points = 256
             box_min = volume.get_world_grid_min() 
             box_max = volume.get_world_grid_max() 
@@ -318,8 +354,15 @@ class VolumeRenderer():
         else: 
             volume = self.volume
         self.__make_cameras(axis, direction)
-        proj_data = projection(volume, self.cameras, self.attenuation, self.psf, 0.0, 0.0, self.use_gpu, self.truncate_negative)
-        self.__proj = UncompressedProjection(proj_data)
+        if has_niftycore: 
+            proj_data = projection(volume, self.cameras, self.attenuation, self.psf, 0.0, 0.0, self.use_gpu, self.truncate_negative)
+        else: 
+            raise InstallationError("NiftyCore not installed, please install to execute render(). ")
+        # FIXME: this is temporary, make the volume renderer independent of Python module mMR
+        if has_mMR: 
+            self.__proj = UncompressedProjection(proj_data)
+        else: 
+            raise InstallationError("mMR not installed, please install to execute render(). ")
         return self.__proj  #FIXME: memoize projection (use new style objects - properties)
 
     def _repr_html_(self):

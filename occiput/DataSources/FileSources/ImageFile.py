@@ -49,7 +49,7 @@ def load_mask_file(filename, lookup_table_filename=None):
                 
     else: 
         lut = load_freesurfer_lut_file(lookup_table_filename) 
-    if lut != None: 
+    if lut  is not None: 
         occ.set_lookup_table(lut) 
     return occ
 
@@ -63,10 +63,10 @@ def load_dicom_series(path, files_start_with=None, files_end_with=None, exclude_
  
         for file_name in files: 
             file_valid = True
-            if files_start_with!=None: 
+            if files_start_with is not None: 
                 if not file_name.startswith(files_start_with): 
                     file_valid = False
-            if files_end_with!=None: 
+            if files_end_with is not None: 
                 if not file_name.endswith(files_end_with): 
                     file_valid = False 
             for s in exclude_files_end_with: 

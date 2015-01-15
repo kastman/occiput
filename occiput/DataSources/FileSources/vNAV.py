@@ -58,7 +58,7 @@ class vNAV_MPRage():
         self._n_time_points     = 0 
         self._duration          = [] 
         self._motion            = [] 
-        if path != None: 
+        if path  is not None: 
             self.load_data_files(path, from_dicom_comments, files_start_with, files_end_with) 
 
     def get_volume_dicom(self, index): 
@@ -106,10 +106,10 @@ class vNAV_MPRage():
         # CASE 1: there exist files named with .dcm extension
         for file_name in files: 
             file_valid = True
-            if files_start_with!=None: 
+            if files_start_with is not None: 
                 if not file_name.startswith(files_start_with): 
                     file_valid = False
-            if files_end_with!=None: 
+            if files_end_with is not None: 
                 if not file_name.endswith(files_end_with): 
                     file_valid = False 
             for s in exclude_files_end_with: 
@@ -192,7 +192,7 @@ class vNAV_MPRage():
         t = range(len(self._tx))
 
         # make windows:
-        if extract_events_threshold!=None: 
+        if extract_events_threshold is not None: 
             windows = []
             events  = self.extract_motion_events(method, extract_events_threshold, box_min, box_max)
         t_index_start = 0
@@ -215,7 +215,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('TX [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
 
@@ -226,7 +226,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('TY [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
     
@@ -237,11 +237,11 @@ class vNAV_MPRage():
             ax1.set_ylabel('TZ [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
 
-#            if save_to_file!=None: 
+#            if save_to_file is not None: 
 #                pylab.savefig(save_to_file)
 
             fig2 = pylab.figure(2)
@@ -253,7 +253,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('RX [deg]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
             
@@ -264,7 +264,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('RY [deg]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
                                 
@@ -275,11 +275,11 @@ class vNAV_MPRage():
             ax1.set_ylabel('RZ [deg]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
                                 
-#            if save_to_file!=None: 
+#            if save_to_file is not None: 
 #                pylab.savefig(save_to_file)
         else: 
             fig1=None
@@ -306,7 +306,7 @@ class vNAV_MPRage():
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
             #print windows
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
     
@@ -318,7 +318,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('RY [deg]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
                 
@@ -330,11 +330,11 @@ class vNAV_MPRage():
             ax1.set_ylabel('RZ [deg]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_deg) 
                 self._draw_events(ax1, t, range_deg, events) 
         
-#            if save_to_file!=None: 
+#            if save_to_file is not None: 
 #                pylab.savefig(save_to_file)
 
             fig4 = pylab.figure(4)
@@ -347,7 +347,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('TX [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
                 
@@ -359,7 +359,7 @@ class vNAV_MPRage():
             ax1.set_ylabel('TY [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
                 
@@ -371,11 +371,11 @@ class vNAV_MPRage():
             ax1.set_ylabel('TZ [mm]')
             #for label in ax1.get_xticklabels():
             #    label.set_color('r')
-            if extract_events_threshold != None:
+            if extract_events_threshold  is not None:
                 self._draw_rectangles(ax1,windows,range_mm) 
                 self._draw_events(ax1, t, range_mm, events) 
                 
-#            if save_to_file!=None: 
+#            if save_to_file is not None: 
 #                pylab.savefig(save_to_file)
         else: 
             fig3=None
@@ -470,7 +470,7 @@ class vNAV_MPRage():
         mean_displ_var = numpy.zeros(len(t))
         mean_displ_var_since_event = numpy.zeros(len(t))
         
-        if extract_events_threshold!=None: 
+        if extract_events_threshold is not None: 
             events = self.extract_motion_events(method, extract_events_threshold, box_min, box_max)
 
         t_index_old = 0
@@ -497,13 +497,13 @@ class vNAV_MPRage():
         ax1.set_title("Mean displacement [mm]")
         ax1.plot(t,mean_displ, line_color)
         ax1.grid(True)
-        if plot_range[0]==None: 
+        if plot_range[0] is None: 
             plot_range[0]=mean_displ.min()
-        if plot_range[1]==None: 
+        if plot_range[1] is None: 
             plot_range[1]=mean_displ.max()
         ax1.set_ylim( plot_range )
         ax1.set_ylabel('disp [mm]')
-        if extract_events_threshold!=None: 
+        if extract_events_threshold is not None: 
             ax1.hold(1)
             E = events*mean_displ
             E[numpy.where(E<0.1)]=-1000
@@ -517,13 +517,13 @@ class vNAV_MPRage():
         ax1.set_title("Mean displacement delta ")
         ax1.plot(t,mean_displ_var, line_color)
         ax1.grid(True)
-        if plot_range[0]==None: 
+        if plot_range[0] is None: 
             plot_range[0]=mean_displ_var.min()
-        if plot_range[1]==None: 
+        if plot_range[1] is None: 
             plot_range[1]=mean_displ_var.max()
         ax1.set_ylim( plot_range )
         ax1.set_ylabel('delta [mm]')
-        if extract_events_threshold!=None: 
+        if extract_events_threshold is not None: 
             ax1.hold(1)
             E = events*mean_displ_var
             E[numpy.where(E<0.1)]=-1000
@@ -537,13 +537,13 @@ class vNAV_MPRage():
         ax1.set_title("Mean displacement event")
         ax1.plot(t,mean_displ_var_since_event, line_color)
         ax1.grid(True)
-        if plot_range[0]==None: 
+        if plot_range[0] is None: 
             plot_range[0]=mean_displ_var_since_event.min()
-        if plot_range[1]==None: 
+        if plot_range[1] is None: 
             plot_range[1]=mean_displ_var_since_event.max()
         ax1.set_ylim( plot_range )
         ax1.set_ylabel('event [mm]')
-        if extract_events_threshold!=None: 
+        if extract_events_threshold is not None: 
             ax1.hold(1)
             E = events*mean_displ_var_since_event
             E[numpy.where(E<0.1)]=-1000
@@ -553,7 +553,7 @@ class vNAV_MPRage():
         #    label.set_color('r')
 
 
-        if save_to_file!=None: 
+        if save_to_file is not None: 
             pylab.savefig(save_to_file)
         pylab.show() 
         return fig
@@ -567,9 +567,9 @@ class vNAV_MPRage():
         ax1.set_title("Rotation agnle [deg] vs. vNAV frame number")
         ax1.plot(t,s, line_color)
         ax1.grid(True)
-        if plot_range[0]==None: 
+        if plot_range[0] is None: 
             plot_range[0]=s.min()
-        if plot_range[1]==None: 
+        if plot_range[1] is None: 
             plot_range[1]=s.max()
         ax1.set_ylim( plot_range )
         ax1.set_ylabel('Rotation angle [deg]')
@@ -593,7 +593,7 @@ class vNAV_MPRage():
         #for label in ax1.get_xticklabels():
         #    label.set_color('r')
     
-        if save_to_file!=None: 
+        if save_to_file is not None: 
             pylab.savefig(save_to_file)
         pylab.show() 
         return fig

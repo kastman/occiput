@@ -12,7 +12,7 @@ from glob import glob
 
 setup(
     name='occiput',
-    version='0.1.0',
+    version='0.2.0',
     author='Stefano Pedemonte',
     author_email='stefano.pedemonte@gmail.com',
     packages=['occiput', 
@@ -53,14 +53,18 @@ setup(
                      ],
     install_requires=[
         "numpy >= 1.6.0", 
-        "simplewrap >= 0.1.0", 
+        #"scipy >= 0.14.0",
+        "matplotlib >= 1.4.0",
+        "pil >= 1.0.0",
+        "simplewrap >= 0.1.0",
+        "petlink >= 0.1.0",  
         "interfile >= 0.1.0", 
-        "petlink >= 0.1.0", 
         "DisplayNode >= 0.1.0", 
         "ilang >= 0.1.0", 
         "ipy_table >= 1.11.0",
         "pydicom >= 0.9.0",
-        "nibabel >= 1.0.0",  
+        "nibabel >= 1.3.0",  
+        "nipy >= 0.3.0",
     ], 
 ) 
 

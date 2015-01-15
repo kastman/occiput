@@ -12,8 +12,8 @@
 
 import occiput as __occiput
 import numpy as __np
-from NiftyCore.NiftyRec import INTERPOLATION_LINEAR, INTERPOLATION_POINT
 try:
+    from NiftyCore.NiftyRec import INTERPOLATION_LINEAR, INTERPOLATION_POINT
     from NiftyCore.NiftyRec import TR_resample_grid as             __TR_resample_grid 
     from NiftyCore.NiftyRec import TR_grid_from_box_and_affine as  __TR_grid_from_box_and_affine 
     from NiftyCore.NiftyRec import TR_transform_grid as            __TR_transform_grid 

@@ -1,4 +1,11 @@
 
+# occiput 
+# Stefano Pedemonte 
+# April 2014 
+# Harvard University, Martinos Center for Biomedical Imaging 
+# Boston, MA, USA 
+
+
 import Scintillators 
 import Collimators 
 from mMR import UncompressedProjection 
@@ -221,17 +228,17 @@ class SPECT_Static_Scan(object):
             activity = float32(activity)
         else: 
             activity = float32(activity.data)
-        if attenuation!=None:
+        if attenuation is not None:
             if isinstance(attenuation,ndarray):
                 attenuation = float32(attenuation)
             else: 
                 attenuation = float32(attenuation.data)
-        if cameras==None: 
+        if cameras  is None: 
             cameras = float32(linspace(deg_to_rad(self._p_gantry_angular_position_first),deg_to_rad(self._p_gantry_angular_position_last),self._p_gantry_angular_positions).reshape((self._p_gantry_angular_positions,1))) 
         # subsets: 
-        if subsets_array!=None: 
+        if subsets_array is not None: 
             cameras=cameras[where(subsets_array)]
-        if psf==None: 
+        if psf  is None: 
             psf=self._psf
         proj = SPECT_project_parallelholes(activity, cameras, attenuation, psf, self._background_activity, self._background_attenuation, self._use_gpu, self._truncate_negative)
         return UncompressedProjection(proj) 
@@ -242,23 +249,23 @@ class SPECT_Static_Scan(object):
             projection = float32(projection)
         else: 
             projection = float32(projection.data)
-        if attenuation!=None:
+        if attenuation is not None:
             if isinstance(attenuation,ndarray):
                 attenuation = float32(attenuation)
             else: 
                 attenuation = float32(attenuation.data)
-        if cameras==None: 
+        if cameras  is None: 
             cameras = float32(linspace(deg_to_rad(self._p_gantry_angular_position_first),deg_to_rad(self._p_gantry_angular_position_last),self._p_gantry_angular_positions).reshape((self._p_gantry_angular_positions,1)))
         # subsets: 
-        if subsets_array!=None: 
+        if subsets_array is not None: 
             cameras=cameras[where(subsets_array)]
-        if psf==None: 
+        if psf  is None: 
             psf=self._psf   
         backproj = SPECT_backproject_parallelholes(projection, cameras, attenuation, psf, self._background_activity, self._background_attenuation, self._use_gpu, self._truncate_negative)
         return Image3D(backproj)
 
     def scan(self,activity_Bq,scan_time_sec=None): 
-        if scan_time_sec==None: 
+        if scan_time_sec  is None: 
             scan_time_sec = self.get_scan_time() 
         sinogram = 0
         return sinogram
@@ -285,7 +292,7 @@ class SPECT_Static_Scan(object):
         activity = ones((self._p_n_pix_x,self._p_n_pix_y,self._p_n_pix_x),dtype=float32, order="F")
         for i in range(iterations): 
             # Subsets: 
-            if subset_size==None:
+            if subset_size  is None:
                 subsets_array=None
                 subset_size=self._p_gantry_angular_positions
             elif subset_size>=self._p_gantry_angular_positions: 
@@ -293,7 +300,7 @@ class SPECT_Static_Scan(object):
                 subset_size=self._p_gantry_angular_positions
             else:
                 subsets_array = self._subset_generator.new_subset(subset_mode,subset_size)
-            if subsets_array!=None: 
+            if subsets_array is not None: 
                 proj = self.project(activity,subsets_array=subsets_array).data
                 P = (self._measurement[:,:,where(subsets_array)].reshape((self._p_n_pix_x,self._p_n_pix_y,subset_size))+EPS)/(proj+EPS)
                 norm = self.backproject(ones(( self._p_n_pix_x,self._p_n_pix_y,subset_size ),dtype=float32, order="F"), subsets_array=subsets_array).data 
