@@ -5,14 +5,18 @@
 # Dec 2013, Boston 
 
 
-from setuptools import setup, Extension, Library
+from setuptools import setup, Extension
+try: 
+    from setuptools.extension import Library
+except: 
+    from setuptools import Library
 from glob import glob 
 
 
 
 setup(
     name='occiput',
-    version='0.2.0',
+    version='0.1.0',
     author='Stefano Pedemonte',
     author_email='stefano.pedemonte@gmail.com',
     packages=['occiput', 

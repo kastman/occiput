@@ -7,7 +7,7 @@
 
 
 import numpy
-import Image
+from PIL import Image
 import nibabel
 import json 
 import DisplayNode 
@@ -648,17 +648,17 @@ class Image3D(ImageND):
         D = self.display(axis) 
         D.display_in_browser() 
 
-    def display(self, axis=0, shrink=256,rotate=90,subsample_slices=None,scales=None,open_browser=False): 
+    def display(self, axis=0,shrink=None,rotate=None,subsample_slices=None,scales=None,open_browser=None): 
         # The following is a quick fix: use MultipleVolumesNiftyCore if the image has small size, 
         # MultipleVolumes otherwise. MultipleVolumesNiftyCore makes use of the GPU but crashes with large images. 
         # NOTE that MultipleVolumes produces a different visualisation from MultipleVolumesNiftyCore: 
         # it displays the raw imaging data, without accounting for the transformation to world space. 
         # Modify MultipleVolumesNiftyCore so that it processes the data in sequence if it is too large for the GPU. 
         # Then get rid of  MultipleVolumes. 
-#        if self.size <= 256**3: 
-#            D = MultipleVolumesNiftyCore([self,],axis=axis,shrink=shrink,rotate=rotate,subsample_slices=subsample_slices,scales=scales,open_browser=open_browser) 
-#        else: 
-        D = MultipleVolumes([self,],axis=axis,shrink=shrink,rotate=rotate,subsample_slices=subsample_slices,scales=scales,open_browser=open_browser)
+        #if self.size <= 256**3: 
+        #    D = MultipleVolumesNiftyCore([self],axis,open_browser=open_browser) 
+        #else: 
+        D = MultipleVolumes([self],axis=axis,shrink=shrink,rotate=rotate,subsample_slices=subsample_slices,scales=scales,open_browser=open_browser)
         return D 
 
     def display_slice(self,axis=0,index=None,open_browser=False): 

@@ -22,7 +22,7 @@ from occiput.DataSources.FileSources.vNAV import load_vnav_mprage
 # Import other modules
 from PIL import Image as PIL 
 import ImageDraw
-from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf, asarray
+from numpy import isscalar, linspace, int32, uint32, ones, zeros, pi, float32, where, ndarray, nan, inf
 from numpy.random import randint 
 import os
 
@@ -425,61 +425,7 @@ class PET_Static_Scan():
         self.graph.add_dependence(self.ilang_model,{'lambda':'lambda','alpha':'alpha','z':'z'}) 
         # construct a basic sampler object
         self.sampler     = Sampler(self.graph)
-
-    def save_sinogram_to_file(self,filename='sinogram.h5'):
-        import h5py
-        h5f = h5py.File(filename, 'w')
-        static_data,locations,offsets = self.get_measurement() 
-        h5f.create_dataset('offsets', data=offsets)
-        h5f.create_dataset('locations', data=locations)
-        h5f.create_dataset('static_data', data=static_data)
-        
-        h5f.create_dataset('n_axial', data=self.binning.N_axial)
-        h5f.create_dataset('n_azimuthal', data=self.binning.N_azimuthal)
-        h5f.create_dataset('angular_step_axial', data=self.binning.angular_step_axial)
-        h5f.create_dataset('angular_step_azimuthal', data=self.binning.angular_step_azimuthal)
-        h5f.create_dataset('size_u', data=self.binning.size_u)
-        h5f.create_dataset('size_v', data=self.binning.size_v)
-        h5f.create_dataset('n_u', data=self.binning.N_u)
-        h5f.create_dataset('n_v', data=self.binning.N_v)
-        h5f.create_dataset('N_counts', data=self.N_counts)
-        h5f.create_dataset('N_locations', data=self.N_locations)
-        h5f.create_dataset('compression_ratio', data=self.compression_ratio)
-        h5f.create_dataset('listmode_loss', data=self.listmode_loss)
-        h5f.create_dataset('N_time_bins', data=self.N_time_bins)
-        h5f.create_dataset('time_end', data=self.time_end)
-        h5f.create_dataset('time_start', data=self.time_start)
-        h5f.close()
-
-    def load_sinogram_from_file(self,filename): 
-        import h5py 
-        h5f = h5py.File(filename,'r') 
-        offsets     = asarray( h5f['offsets'] )
-        locations   = asarray( h5f['locations'] )
-        static_data = asarray( h5f['static_data'] )
-        self._measurement_data = static_data
-        self._locations        = locations
-        self._offsets          = offsets
-
-        binning = Binning({'n_axial':                int32(   h5f['n_axial'] ), 
-                           'n_azimuthal':            int32(   h5f['n_azimuthal'] ), 
-                           'angular_step_axial':     float32( h5f['angular_step_axial'] ), 
-                           'angular_step_azimuthal': float32( h5f['angular_step_azimuthal'] ), 
-                           'size_u':                 float32( h5f['size_u'] ), 
-                           'size_v':                 float32( h5f['size_v'] ),
-                           'n_u':                    int32(   h5f['n_u'] ),
-                           'n_v':                    int32(   h5f['n_v'] ) })
-        self.set_binning(binning)
-        self.N_counts =          int32(   h5f['N_counts'] )
-        self.N_locations =       int32(   h5f['N_locations'] )
-        self.compression_ratio = float32( h5f['compression_ratio'] )
-        self.listmode_loss =     float32( h5f['listmode_loss'] )
-        self.N_time_bins =       int32(   h5f['N_time_bins'] )
-        self.time_start =        float32( h5f['time_start'] )
-        self.time_end =          float32( h5f['time_end'] )
-        
-        h5f.close() 
-
+ 
     def set_binning(self, binning): 
         if isinstance(binning,Binning): 
             self.binning = binning
@@ -1048,79 +994,7 @@ class PET_Dynamic_Scan():
         if N_v is None:
             N_v=self.binning.N_v
         return self.interface.uncompress(offsets, projection_data, locations, N_u, N_v) 
-         
-    def save_sinogram_to_file(self,filename='sinogram.h5'):
-        import h5py
-        h5f = h5py.File(filename, 'w')
-        data,locations,offsets = self.get_static_measurement() 
-        h5f.create_dataset('offsets', data=offsets)
-        h5f.create_dataset('locations', data=locations)
-        h5f.create_dataset('static_data', data=data)
-        
-        h5f.create_dataset('n_axial', data=self.binning.N_axial)
-        h5f.create_dataset('n_azimuthal', data=self.binning.N_azimuthal)
-        h5f.create_dataset('angular_step_axial', data=self.binning.angular_step_axial)
-        h5f.create_dataset('angular_step_azimuthal', data=self.binning.angular_step_azimuthal)
-        h5f.create_dataset('size_u', data=self.binning.size_u)
-        h5f.create_dataset('size_v', data=self.binning.size_v)
-        h5f.create_dataset('n_u', data=self.binning.N_u)
-        h5f.create_dataset('n_v', data=self.binning.N_v)
-        h5f.create_dataset('N_counts', data=self.N_counts)
-        h5f.create_dataset('N_locations', data=self.N_locations)
-        h5f.create_dataset('compression_ratio', data=self.compression_ratio)
-        h5f.create_dataset('listmode_loss', data=self.listmode_loss)
-        h5f.create_dataset('N_time_bins', data=self.N_time_bins)
-        h5f.create_dataset('time_end', data=self.time_end)
-        h5f.create_dataset('time_start', data=self.time_start)
-        h5f.close()
-
-    def load_sinogram_from_file(self,filename): 
-        import h5py 
-        h5f = h5py.File(filename,'r') 
-        offsets     = asarray( h5f['offsets'] )
-        locations   = asarray( h5f['locations'] )
-        static_data = asarray( h5f['static_data'] )
-        self._static_measurement_data = static_data
-        self._locations        = locations
-        self._offsets          = offsets
-
-        binning = Binning({'n_axial':                int32( h5f['n_axial'] ), 
-                           'n_azimuthal':            int32( h5f['n_azimuthal'] ), 
-                           'angular_step_axial':     float32( h5f['angular_step_axial'] ), 
-                           'angular_step_azimuthal': float32( h5f['angular_step_azimuthal'] ), 
-                           'size_u':                 float32( h5f['size_u'] ), 
-                           'size_v':                 float32( h5f['size_v'] ),
-                           'n_u':                    int32( h5f['n_u'] ),
-                           'n_v':                    int32( h5f['n_v'] ) })
-        self.set_binning(binning)
-        self.N_counts =          int32( h5f['N_counts'] )
-        self.N_locations =       int32( h5f['N_locations'] )
-        self.compression_ratio = float32( h5f['compression_ratio'] )
-        self.listmode_loss =     float32( h5f['listmode_loss'] )
-        self.N_time_bins =       int32( h5f['N_time_bins'] )
-        self.time_start =        float32( h5f['time_start'] )
-        self.time_end =          float32( h5f['time_end'] )
-
-        h5f.close() 
-
-        # FIXME: design flaws: 1-self.static is redundant (e.g. self.binning,self.static.binning); 2-no need to set interface when loading sinogram data
-        # However now the interface is necessary in order to uncompress the measurement 
-        self.static = PET_Static_Scan()
-        self.static.set_interface(self.interface) 
-        self.static.set_binning(self.binning) 
-        #self.static.scanner_detected = self.scanner_detected 
-        self.static.set_binning(binning)
-        self.static.N_counts = self.N_counts
-        self.static.N_locations = self.N_locations
-        self.static.compression_ratio = self.compression_ratio
-        self.static.listmode_loss = self.listmode_loss
-        self.static.N_time_bins = 1
-        self.static.time_start = self.time_start
-        self.static.time_end = self.time_end
-        self.static._measurement_data = self._static_measurement_data
-        self.static._locations        = self._locations
-        self.static._offsets          = self._offsets
-
+               
     def display_measurements_in_browser(self,scale=None): 
         return self.display_sequence(scale=scale,open_browser=True) 
         

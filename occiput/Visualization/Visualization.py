@@ -13,6 +13,7 @@ import uuid
 
 from occiput.global_settings import is_gpu_enabled
 from DisplayNode import DisplayNode
+#from occiput.Visualization import Colors as C
 from . import Colors as C
 from IPython.display import HTML, Javascript, display
 
@@ -22,10 +23,10 @@ class InstallationError(Exception):
     def __init__(self, message):
         Exception.__init__(self, message)
 
-
-
-
-
+        
+    
+    
+    
 class ProgressBar(): 
     def __init__(self, height='6px', width='100%%', background_color=C.LIGHT_BLUE, foreground_color=C.BLUE): 
         self._percentage = 0.0
@@ -358,7 +359,6 @@ class VolumeRenderer():
             proj_data = projection(volume, self.cameras, self.attenuation, self.psf, 0.0, 0.0, self.use_gpu, self.truncate_negative)
         else: 
             raise InstallationError("NiftyCore not installed, please install to execute render(). ")
-        # FIXME: this is temporary, make the volume renderer independent of Python module mMR
         if has_mMR: 
             self.__proj = UncompressedProjection(proj_data)
         else: 

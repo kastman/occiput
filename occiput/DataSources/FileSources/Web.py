@@ -14,7 +14,7 @@ import subprocess
 import logging
 import sys
 import inspect
-
+import os
 
 
 class Downloader_HTTP(): 
@@ -23,11 +23,23 @@ class Downloader_HTTP():
         self._output = None
         self._progress_bar = ProgressBar()
         self._progress_bar.set_percentage(0)
+        self._verbose = False 
+
+    def set_verbose(self, verbose): 
+        self._verbose = verbose 
 
     def _set_percentage(self,percentage): 
         self._progress_bar.set_percentage(percentage)
 
-    def download(self, url, output=None): 
+    def download(self, url, output=None, overwrite=False): 
+        # Check if output exists: 
+        if not overwrite:
+            if output!=None: 
+                if os.path.exists(output): 
+                    if self._verbose: 
+                        print "File",output,"exists, not dowloading."
+                    self._set_percentage(100)
+                    return output 
         self._set_percentage(0)
         self._output = output
         if output==None: 
@@ -49,8 +61,8 @@ class Downloader_HTTP():
                 p = self._strip_percentage(s)
                 if p!=None: 
                     self._set_percentage(p) 
-                #else: 
-                #    print s
+                if self._verbose:  
+                    print s
                 name = self._strip_filename(s) 
                 if name!=None: 
                     self._set_filename(name)
@@ -79,16 +91,10 @@ class Downloader_HTTP():
  
     def _strip_filename(self,s): 
         if s.find("Saving to")!=-1: 
-            start = s.find("`")
-            stop  = s.find("'")
-            #print start, stop
-            if start == -1 or stop==-1: 
-                return None
-            else: 
-                name = s[start+1:stop] 
-                return name 
-        else: 
-            return None
+            name = s.strip("Saving to").strip("\n").strip("“").strip("'").strip("`")
+            if self._verbose: 
+                print "Detected name: ",name
+            return name 
 
     def _set_filename(self,name): 
         self._filename = name 
@@ -97,7 +103,8 @@ class Dropbox(Downloader_HTTP):
     pass 
     
 
-def download_Dropbox(url): 
+def download_Dropbox(url, output=None, overwrite=False, verbose=False): 
     D = Dropbox()
-    return D.download(url) 
+    D.set_verbose(verbose)
+    return D.download(url, output, overwrite) 
 
