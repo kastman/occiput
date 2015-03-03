@@ -7,7 +7,7 @@
 # Dec. 2013, Boston
 
 
-__all__ = ['PET_Static_Scan','PET_Dynamic_Scan','PET_Interface_Petlink32','PET_Interface_mMR','Binning']
+__all__ = ['PET_Static_Scan','PET_Dynamic_Scan','PET_Interface_Petlink32','Binning']
 
 
 # Import occiput: 

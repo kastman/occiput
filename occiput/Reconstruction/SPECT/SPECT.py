@@ -8,7 +8,14 @@
 
 import Scintillators 
 import Collimators 
-from mMR import UncompressedProjection 
+try:
+    from mMR import UncompressedProjection
+    #FIXME: make it part of occiput Core
+except:
+    has_mMR = False
+    print "Please install mMR to enable compatibility with Siemens Biograph mMR scanner. "
+else:
+    has_mMR = True
 
 from numpy import *
 from numpy.random import randint 
